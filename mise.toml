@@ -1,0 +1,19 @@
+[tools]
+uv = "0.12.5"
+"pipx:check-jsonschema" = "0.38.0"
+
+[tasks.metaschema]
+description = "Validate the HCR schema against its own metaschema"
+run = "check-jsonschema --check-metaschema schema/hcr.schema.json"
+
+[tasks.corpus]
+description = "Run every corpus fixture against the schema and assert its expected verdict"
+run = "uv run --script tools/corpus-runner.py"
+
+[tasks.shape]
+description = "Assert the schema's per-kind prohibitions match the register matrix"
+run = "uv run --script tools/schema-shape.py"
+
+[tasks.check]
+description = "Everything CI runs, in CI's order"
+depends = ["metaschema", "corpus", "shape"]

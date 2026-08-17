@@ -1,0 +1,548 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Harness Constraint Record",
+  "description": "The YAML frontmatter of a record file (`HCR-NNNN-<slug>.md`). A record bundles the guidance an agent reads before writing code with the binding that verifies it, so the two cannot drift apart. The Markdown body below the frontmatter is the guidance text and is not described by this schema.",
+  "type": "object",
+  "properties": {
+    "id": {
+      "description": "Stable identity of this record. Assigned once and never reused or renumbered, because source annotations and `supersedes` references point at it.",
+      "type": "string",
+      "pattern": "^HCR-[0-9]{4}$"
+    },
+    "title": {
+      "description": "One line stating what the rule requires, written so it reads correctly in a violation message.",
+      "type": "string",
+      "minLength": 1
+    },
+    "scope": {
+      "description": "Whether the rule applies to the whole repository or to a single service. The effective rule set for a service is the union of repo-scoped and service-scoped records.",
+      "enum": [
+        "repo",
+        "service"
+      ]
+    },
+    "regulates": {
+      "description": "The category of harm the rule prevents. The six values are discriminated by the question each one answers; see docs/concepts.md.",
+      "enum": [
+        "maintainability",
+        "architecture-fitness",
+        "behaviour",
+        "reliability",
+        "security",
+        "compliance"
+      ]
+    },
+    "summary": {
+      "description": "What the rule requires and why it matters, in prose. This is the text an agent is shown when the rule fires, so it must be actionable on its own.",
+      "type": "string",
+      "minLength": 1
+    },
+    "state": {
+      "description": "Lifecycle position. `draft` is not yet active; `warn` reports without blocking; `enforced` gates; `deprecated` is retained for history and never deleted, so that superseding records keep a resolvable target.",
+      "enum": [
+        "draft",
+        "warn",
+        "enforced",
+        "deprecated"
+      ]
+    },
+    "rationale": {
+      "description": "Optional reference to the decision this rule implements, as an opaque prefixed identifier such as `ADR-0042`, `RFC-12` or `PRD-2026-11`. The prefix is deliberately not constrained to ADRs: teams record decisions in different systems, and hard-coding one team's convention into the framework is the failure mode this project exists to avoid.",
+      "type": "string",
+      "pattern": "^[A-Z][A-Z0-9]*-[A-Za-z0-9._/-]+$"
+    },
+    "supersedes": {
+      "description": "Optional id of the single record this one replaces. The superseded record is set to `deprecated` rather than deleted.",
+      "type": "string",
+      "pattern": "^HCR-[0-9]{4}$"
+    },
+    "exceptions": {
+      "description": "Scoped waivers. Every waiver states a reason, so an unexplained exemption cannot be added silently.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "scope",
+          "reason"
+        ],
+        "properties": {
+          "scope": {
+            "description": "What the waiver applies to, such as a path glob or a service name.",
+            "type": "string"
+          },
+          "reason": {
+            "description": "Why the exemption exists. Mandatory: an exemption without a stated reason is indistinguishable from an oversight.",
+            "type": "string",
+            "minLength": 1
+          },
+          "until": {
+            "description": "Optional expiry date, `YYYY-MM-DD`. After this date the rule fires again, so a temporary waiver cannot quietly become permanent.",
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+          }
+        }
+      }
+    },
+    "enforced_by": {
+      "description": "One or more bindings that verify the rule. Multiple bindings are used when a single rule is checked from more than one angle, for example a deterministic command plus an advisory review.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$comment": "SHAPE IS LOAD-BEARING -- do not simplify. Three properties of this object work together to guarantee that any single defect produces exactly one diagnostic, which is what the conformance corpus asserts. (1) Every kind-specific property name is declared here at item level, even though each belongs to only one kind: a failed `then` branch discards its annotations, so if the names were declared only inside branches, `unevaluatedProperties` would fire a second, spurious diagnostic alongside the real one. (2) Dispatch uses `allOf` with `if`/`then` rather than `oneOf`, because a failing `oneOf` names no branch and so cannot attribute the error to a kind. (3) Closure is `unevaluatedProperties` here at the item root, never `additionalProperties` inside a branch, which cannot see sibling-declared properties. Verified empirically against check-jsonschema 0.38.0; the naive form emits two diagnostics where one is intended.",
+        "type": "object",
+        "unevaluatedProperties": false,
+        "required": [
+          "kind"
+        ],
+        "properties": {
+          "kind": {
+            "description": "Which verification mechanism this binding uses. The set is closed at six across three tiers: four deterministic (`command`, `config-assert`, `grep`, `external`), one AI (`agent-review`), one human (`inferential`).",
+            "enum": [
+              "command",
+              "config-assert",
+              "grep",
+              "external",
+              "agent-review",
+              "inferential"
+            ]
+          },
+          "severity": {
+            "description": "Whether a violation fails the run. Defaults per kind: deterministic bindings block, `agent-review` and `inferential` are advisory.",
+            "enum": [
+              "blocking",
+              "advisory"
+            ]
+          },
+          "cadence": {
+            "description": "When this binding runs. Independent of both `state` and `severity`.",
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "on-change",
+                "ci",
+                "scheduled",
+                "production"
+              ]
+            }
+          },
+          "run": {
+            "description": "Command executed from the repository root. Conventionally delegates to a script or task runner rather than inlining logic.",
+            "type": "string"
+          },
+          "ref": {
+            "description": "Optional deduplication key. Bindings sharing a `ref` must carry a byte-identical `run`, so many records can be satisfied by one execution instead of one run per record.",
+            "type": "string"
+          },
+          "select": {
+            "description": "Optional opaque selector picking this record's finding out of a shared run's output. Its grammar belongs to the tool being run, not to this schema.",
+            "type": "string"
+          },
+          "timeout_secs": {
+            "description": "Optional wall-clock limit for `run`.",
+            "type": "integer",
+            "minimum": 1
+          },
+          "pattern": {
+            "description": "Optional regular expression matched against the command's stdout and stderr, for tools that report failure in their output rather than their exit code.",
+            "type": "string"
+          },
+          "file": {
+            "description": "For `config-assert`, the data file to inspect. For `grep`, a glob of files to search. `config-assert` targets data files only (YAML, TOML, JSON, XML, properties) and never a build script, because a script is code and its values are not statically readable.",
+            "type": "string"
+          },
+          "path": {
+            "description": "Location of the value inside the data file. Its expression grammar is resolved at runtime and is not validated here.",
+            "type": "string"
+          },
+          "op": {
+            "description": "Comparison applied at `path`.",
+            "enum": [
+              "equals",
+              "gte",
+              "lte",
+              "matches",
+              "absent"
+            ]
+          },
+          "value": {
+            "description": "Expected value. Required for every `op` except `absent`, which asserts that nothing exists at `path` and therefore takes no value.",
+            "type": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          },
+          "require": {
+            "description": "Patterns that must be present in the matched files.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "forbid": {
+            "description": "Patterns that must not be present in the matched files.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "string"
+            }
+          },
+          "tool": {
+            "description": "Name of the external tool that owns this check. The tool reports the finding; this record only records that the rule is delegated to it.",
+            "type": "string"
+          },
+          "docs": {
+            "description": "Link to the external tool's documentation for this specific check.",
+            "type": "string"
+          },
+          "prompt": {
+            "description": "Instruction given to the reviewing model. Stored as data so the prompt is versioned and reviewed like any other constraint.",
+            "type": "string"
+          },
+          "grounding": {
+            "description": "Optional files supplied to the model as context for the review.",
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "model": {
+            "description": "Optional specific model to use for the review.",
+            "type": "string"
+          },
+          "runs": {
+            "description": "How many times to run the review. Values above one are used to union findings across runs, because a single pass over a non-deterministic reviewer under-reports.",
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "allOf": [
+          {
+            "if": {
+              "$comment": "`required: [\"kind\"]` inside the predicate is load-bearing. Without it, a binding that omits `kind` entirely satisfies every branch predicate vacuously, and all six `then` branches fire at once -- producing nonsense such as a `grep` branch demanding `file` from a record that never claimed to be a grep.",
+              "properties": {
+                "kind": {
+                  "const": "command"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "$comment": "The `false` entries are cross-kind prohibitions: they reject a field that belongs to a different kind. They are required because every field name is declared at item level (see the item `$comment`), which means `unevaluatedProperties` no longer sees a foreign field as unknown. Each MUST stay literally `false` -- annotating one turns it into a schema that permits any value, silently removing the prohibition, and tools/schema-shape.py detects them with an identity check on the boolean.",
+              "required": [
+                "run"
+              ],
+              "properties": {
+                "severity": {
+                  "default": "blocking"
+                },
+                "cadence": {
+                  "default": [
+                    "on-change",
+                    "ci"
+                  ]
+                },
+                "file": false,
+                "path": false,
+                "op": false,
+                "value": false,
+                "require": false,
+                "forbid": false,
+                "tool": false,
+                "docs": false,
+                "prompt": false,
+                "grounding": false,
+                "model": false,
+                "runs": false
+              }
+            }
+          },
+          {
+            "if": {
+              "$comment": "`required: [\"kind\"]` inside the predicate is load-bearing. Without it, a binding that omits `kind` entirely satisfies every branch predicate vacuously, and all six `then` branches fire at once -- producing nonsense such as a `grep` branch demanding `file` from a record that never claimed to be a grep.",
+              "properties": {
+                "kind": {
+                  "const": "config-assert"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "$comment": "The `false` entries are cross-kind prohibitions: they reject a field that belongs to a different kind. They are required because every field name is declared at item level (see the item `$comment`), which means `unevaluatedProperties` no longer sees a foreign field as unknown. Each MUST stay literally `false` -- annotating one turns it into a schema that permits any value, silently removing the prohibition, and tools/schema-shape.py detects them with an identity check on the boolean.",
+              "required": [
+                "file",
+                "path",
+                "op"
+              ],
+              "properties": {
+                "severity": {
+                  "default": "blocking"
+                },
+                "cadence": {
+                  "default": [
+                    "on-change",
+                    "ci"
+                  ]
+                },
+                "run": false,
+                "ref": false,
+                "select": false,
+                "timeout_secs": false,
+                "pattern": false,
+                "require": false,
+                "forbid": false,
+                "tool": false,
+                "docs": false,
+                "prompt": false,
+                "grounding": false,
+                "model": false,
+                "runs": false
+              },
+              "allOf": [
+                {
+                  "$comment": "`value` is required for every operator except `absent`, so requiredness cannot be stated unconditionally in the enclosing branch. Both predicates repeat `required: [\"op\"]` for the same reason the outer predicates require `kind`: `allOf` does not short-circuit, so a binding that omits `op` would otherwise satisfy the `absent` arm vacuously and emit a second diagnostic on top of the missing-`op` one.",
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "const": "absent"
+                      }
+                    },
+                    "required": [
+                      "op"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "value": false
+                    }
+                  }
+                },
+                {
+                  "$comment": "R-027: every operator other than `absent` compares against something, so `value` is required here. The predicate negates `absent` rather than enumerating the five remaining operators, because an enumeration would restate the `op` enum in a second place and the two copies could disagree without anything detecting it.",
+                  "if": {
+                    "properties": {
+                      "op": {
+                        "not": {
+                          "const": "absent"
+                        }
+                      }
+                    },
+                    "required": [
+                      "op"
+                    ]
+                  },
+                  "then": {
+                    "required": [
+                      "value"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "$comment": "`required: [\"kind\"]` inside the predicate is load-bearing. Without it, a binding that omits `kind` entirely satisfies every branch predicate vacuously, and all six `then` branches fire at once -- producing nonsense such as a `grep` branch demanding `file` from a record that never claimed to be a grep.",
+              "properties": {
+                "kind": {
+                  "const": "grep"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "$comment": "The `false` entries are cross-kind prohibitions: they reject a field that belongs to a different kind. They are required because every field name is declared at item level (see the item `$comment`), which means `unevaluatedProperties` no longer sees a foreign field as unknown. Each MUST stay literally `false` -- annotating one turns it into a schema that permits any value, silently removing the prohibition, and tools/schema-shape.py detects them with an identity check on the boolean. A grep binding must assert something: at least one of `require` or `forbid` is present. Both carry `minItems: 1`, because an empty array would otherwise satisfy this as a no-op.",
+              "required": [
+                "file"
+              ],
+              "properties": {
+                "severity": {
+                  "default": "blocking"
+                },
+                "cadence": {
+                  "default": [
+                    "on-change",
+                    "ci"
+                  ]
+                },
+                "run": false,
+                "ref": false,
+                "select": false,
+                "timeout_secs": false,
+                "pattern": false,
+                "path": false,
+                "op": false,
+                "value": false,
+                "tool": false,
+                "docs": false,
+                "prompt": false,
+                "grounding": false,
+                "model": false,
+                "runs": false
+              },
+              "anyOf": [
+                {
+                  "required": [
+                    "require"
+                  ]
+                },
+                {
+                  "required": [
+                    "forbid"
+                  ]
+                }
+              ]
+            }
+          },
+          {
+            "if": {
+              "$comment": "`required: [\"kind\"]` inside the predicate is load-bearing. Without it, a binding that omits `kind` entirely satisfies every branch predicate vacuously, and all six `then` branches fire at once -- producing nonsense such as a `grep` branch demanding `file` from a record that never claimed to be a grep.",
+              "properties": {
+                "kind": {
+                  "const": "external"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "$comment": "The `false` entries are cross-kind prohibitions: they reject a field that belongs to a different kind. They are required because every field name is declared at item level (see the item `$comment`), which means `unevaluatedProperties` no longer sees a foreign field as unknown. Each MUST stay literally `false` -- annotating one turns it into a schema that permits any value, silently removing the prohibition, and tools/schema-shape.py detects them with an identity check on the boolean.",
+              "required": [
+                "tool",
+                "docs"
+              ],
+              "properties": {
+                "severity": {
+                  "default": "blocking"
+                },
+                "cadence": {
+                  "default": [
+                    "on-change",
+                    "ci"
+                  ]
+                },
+                "run": false,
+                "ref": false,
+                "select": false,
+                "timeout_secs": false,
+                "pattern": false,
+                "file": false,
+                "path": false,
+                "op": false,
+                "value": false,
+                "require": false,
+                "forbid": false,
+                "prompt": false,
+                "grounding": false,
+                "model": false,
+                "runs": false
+              }
+            }
+          },
+          {
+            "if": {
+              "$comment": "`required: [\"kind\"]` inside the predicate is load-bearing. Without it, a binding that omits `kind` entirely satisfies every branch predicate vacuously, and all six `then` branches fire at once -- producing nonsense such as a `grep` branch demanding `file` from a record that never claimed to be a grep.",
+              "properties": {
+                "kind": {
+                  "const": "agent-review"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "$comment": "The `false` entries are cross-kind prohibitions: they reject a field that belongs to a different kind. They are required because every field name is declared at item level (see the item `$comment`), which means `unevaluatedProperties` no longer sees a foreign field as unknown. Each MUST stay literally `false` -- annotating one turns it into a schema that permits any value, silently removing the prohibition, and tools/schema-shape.py detects them with an identity check on the boolean.",
+              "required": [
+                "prompt"
+              ],
+              "properties": {
+                "severity": {
+                  "$comment": "`const` and `default` together are deliberate and are the one place a branch redeclares more than its default. AI review is non-deterministic, so it may never gate a merge: `const` makes `blocking` a schema error rather than a runtime downgrade.",
+                  "const": "advisory",
+                  "default": "advisory"
+                },
+                "cadence": {
+                  "default": [
+                    "scheduled"
+                  ]
+                },
+                "run": false,
+                "ref": false,
+                "select": false,
+                "timeout_secs": false,
+                "pattern": false,
+                "file": false,
+                "path": false,
+                "op": false,
+                "value": false,
+                "require": false,
+                "forbid": false,
+                "tool": false,
+                "docs": false
+              }
+            }
+          },
+          {
+            "if": {
+              "$comment": "`required: [\"kind\"]` inside the predicate is load-bearing. Without it, a binding that omits `kind` entirely satisfies every branch predicate vacuously, and all six `then` branches fire at once -- producing nonsense such as a `grep` branch demanding `file` from a record that never claimed to be a grep.",
+              "properties": {
+                "kind": {
+                  "const": "inferential"
+                }
+              },
+              "required": [
+                "kind"
+              ]
+            },
+            "then": {
+              "$comment": "A human judgement call. Nothing executes, so this kind owns no fields at all and prohibits every one of the eighteen.",
+              "properties": {
+                "severity": {
+                  "default": "advisory"
+                },
+                "run": false,
+                "ref": false,
+                "select": false,
+                "timeout_secs": false,
+                "pattern": false,
+                "file": false,
+                "path": false,
+                "op": false,
+                "value": false,
+                "require": false,
+                "forbid": false,
+                "tool": false,
+                "docs": false,
+                "prompt": false,
+                "grounding": false,
+                "model": false,
+                "runs": false
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "required": [
+    "id",
+    "title",
+    "scope",
+    "regulates",
+    "summary",
+    "state",
+    "enforced_by"
+  ],
+  "unevaluatedProperties": false
+}

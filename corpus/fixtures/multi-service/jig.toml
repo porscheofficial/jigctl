@@ -1,0 +1,5 @@
+# jigctl configuration for the multi-service fixture.
+# This is a plain TOML config file, not an HCR record: it carries no YAML
+# frontmatter and no assertion comment block, and it is never validated
+# against the HCR schema.
+service_globs = ["services/*"]
