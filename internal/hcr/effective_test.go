@@ -51,3 +51,28 @@ func TestEffectiveSet(t *testing.T) {
 		}
 	}
 }
+
+func TestEffectiveSet_SortsCorrectly(t *testing.T) {
+	s := Service{
+		path: "test/path",
+		repoRecords: []Record{
+			{ID: "HCR-0900", Path: "r2"},
+			{ID: "HCR-0100", Path: "r1"},
+		},
+		serviceRecords: []Record{
+			{ID: "HCR-0500", Path: "s2"},
+			{ID: "HCR-0300", Path: "s1"},
+		},
+	}
+	got := EffectiveSet(s)
+	expected := []string{"HCR-0100", "HCR-0300", "HCR-0500", "HCR-0900"}
+
+	if len(got) != len(expected) {
+		t.Fatalf("expected length %d, got %d", len(expected), len(got))
+	}
+	for i := range got {
+		if got[i].ID != expected[i] {
+			t.Errorf("at index %d expected %s, got %s", i, expected[i], got[i].ID)
+		}
+	}
+}

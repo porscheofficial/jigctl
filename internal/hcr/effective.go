@@ -20,7 +20,10 @@ type Service struct {
 	serviceRecords []Record
 }
 
-// Record represents a validated HCR record within the tree for effective set operations.
+// Record represents a discovered record in the tree, identified by id and path,
+// not necessarily schema-valid. Membership resolution is deliberately independent
+// of schema validity so that a service's effective set does not silently shrink
+// when one of its records is malformed.
 type Record struct {
 	ID   string
 	Path string
