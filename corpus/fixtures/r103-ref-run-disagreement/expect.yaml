@@ -1,0 +1,7 @@
+diagnostics:
+  - file: services/core/.hcr/HCR-0503-shared-check-first.md
+    at: /enforced_by/0/run
+    rule: R-103
+  - file: services/core/.hcr/HCR-0504-shared-check-second.md
+    at: /enforced_by/0/run
+    rule: R-103

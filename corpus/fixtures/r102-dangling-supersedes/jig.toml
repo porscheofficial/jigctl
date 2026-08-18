@@ -1,0 +1,4 @@
+# jig.toml for the r102-dangling-supersedes fixture.
+# Single-service-less tree: one repo-root record with a supersedes target
+# that does not exist anywhere in this tree.
+service_globs = []

@@ -1,0 +1,3 @@
+# jig.toml for the r101-duplicate-id fixture.
+# Two sibling services, each with its own .hcr/, both claiming id HCR-0501.
+service_globs = ["services/*"]

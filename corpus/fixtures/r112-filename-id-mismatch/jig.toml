@@ -1,0 +1,4 @@
+# jig.toml for the r112-filename-id-mismatch fixture.
+# Repo-root only: the single record's filename does not begin with its own
+# declared id.
+service_globs = []

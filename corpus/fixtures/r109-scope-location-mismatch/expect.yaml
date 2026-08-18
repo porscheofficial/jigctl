@@ -1,0 +1,4 @@
+diagnostics:
+  - file: .hcr/HCR-0506-scope-location-mismatch.md
+    at: /scope
+    rule: R-109

@@ -1,0 +1,4 @@
+# jig.toml for the r104-missing-run-path fixture.
+# Repo-root only: one record whose run is path-shaped but the path does not
+# exist on disk. Its absence IS the violation; no target is ever created.
+service_globs = []

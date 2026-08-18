@@ -1,0 +1,7 @@
+diagnostics:
+  - file: services/a/.hcr/HCR-0501-service-a-manual-review.md
+    at: /id
+    rule: R-101
+  - file: services/b/.hcr/HCR-0501-service-b-manual-review.md
+    at: /id
+    rule: R-101

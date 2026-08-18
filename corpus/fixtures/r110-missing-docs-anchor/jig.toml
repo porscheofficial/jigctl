@@ -1,0 +1,5 @@
+# jig.toml for the r110-missing-docs-anchor fixture.
+# Repo-root only: one record's external.docs names a path+anchor. The docs
+# file itself is deliberately NOT created here (the next todo supplies it,
+# with a heading that does not match this anchor).
+service_globs = []

@@ -1,0 +1,4 @@
+diagnostics:
+  - file: .hcr/HCR-0580-filename-id-mismatch.md
+    at: /id
+    rule: R-112

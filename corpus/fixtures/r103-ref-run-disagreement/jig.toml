@@ -1,0 +1,4 @@
+# jig.toml for the r103-ref-run-disagreement fixture.
+# One service; two separate records inside it share one ref and disagree on
+# run, proving ref matching crosses record boundaries (not record-local).
+service_globs = ["services/*"]

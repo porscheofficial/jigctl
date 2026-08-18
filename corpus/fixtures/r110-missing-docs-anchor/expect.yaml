@@ -1,0 +1,4 @@
+diagnostics:
+  - file: .hcr/HCR-0507-docs-anchor-check.md
+    at: /enforced_by/0/docs
+    rule: R-110

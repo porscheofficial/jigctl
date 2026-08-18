@@ -1,0 +1,4 @@
+diagnostics:
+  - file: .hcr/HCR-0502-dangling-supersedes-example.md
+    at: /supersedes
+    rule: R-102

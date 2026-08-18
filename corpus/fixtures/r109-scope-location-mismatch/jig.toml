@@ -1,0 +1,4 @@
+# jig.toml for the r109-scope-location-mismatch fixture.
+# Repo-root only: the single record lives in the tree root's .hcr/ but
+# declares scope: service, which disagrees with its location.
+service_globs = []

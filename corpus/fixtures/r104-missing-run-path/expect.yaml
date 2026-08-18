@@ -1,0 +1,4 @@
+diagnostics:
+  - file: .hcr/HCR-0505-missing-run-path-check.md
+    at: /enforced_by/0/run
+    rule: R-104
