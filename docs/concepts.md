@@ -66,6 +66,14 @@ API compatibility is `behaviour`, but reversible migrations are `reliability` �
 
 Vulnerable dependencies are `security`, but licence allowlists are `compliance` — one is exploitable by an attacker, the other is an obligation that exists whether or not anyone ever attacks anything.
 
+## Why there are two corpora
+
+The corpus is split into two by design. `corpus/records/` asserts record shape, and its files never form a repository. In contrast, `corpus/fixtures/<tree>/` asserts cross-file rules, and each is a real repository root marked by a `jig.toml`.
+
+The alternative was running the tree rules over `corpus/records/` as well. This was rejected because those fixtures deliberately reference files that do not exist. There are 23 `run:` paths, one `supersedes` target, and three `docs:` paths authored to test record shape, not repository truth. A cross-file rule run over them would report a flood of findings that are all correct about the filesystem and all meaningless about the specification. Creating 23 no-op scripts to silence it would have been the trap.
+
+Furthermore, R-108 is a resolver rather than a checkable rule. It computes the union of a service's records with the repository's, and a union cannot fail. It therefore has a unit test asserting exact membership, not a fixture asserting a diagnostic — there is no way to author a record that makes it produce a wrong answer.
+
 ## Rejected alternatives
 
 A hand-curated TypeScript registry was rejected because it cannot reach Go, Python, or JVM teams — an HCR must be readable and checkable from whatever language a monorepo happens to contain, not only the language the tool itself was written in.

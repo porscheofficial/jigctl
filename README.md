@@ -3,10 +3,10 @@
 A constraint harness for polyglot monorepos — repo-wide and per-service.
 
 An **HCR** (Harness Constraint Record) is a single, versioned, machine-checkable
-rule about your codebase; `jigctl` is the reference implementation that reads
-and enforces HCRs stored under a repo's `.hcr/` directory, configured by `jig.toml`.
+rule about your codebase. `jigctl` is the reference implementation CLI that reads
+and validates HCRs stored under a repo's `.hcr/` directory, configured by `jig.toml`.
 
-Here's a complete HCR:
+Here is a complete HCR:
 
 ```yaml
 ---
@@ -27,8 +27,26 @@ Run `make lint` against any package you touch before opening a pull request.
 Zero warnings are allowed — fix the code rather than suppressing the rule.
 ```
 
-This repo currently contains the HCR schema (`schema/hcr.schema.json`) and a
-fixture corpus of valid and invalid example records (`corpus/records/`).
-There is no CLI yet.
+## Install
+
+Build the CLI from source inside a repository checkout. There are no published releases yet.
+
+```bash
+go build -o jigctl ./cmd/jigctl
+```
+
+## Quick Start
+
+Validate your repo's records for well-formedness:
+
+```bash
+./jigctl validate .
+```
+
+## Status
+
+This repo contains the HCR schema (`schema/hcr.schema.json`) and the `jigctl`
+validator. The CLI currently validates records for correctness; executing
+commands to enforce constraints is a future milestone.
 
 Licensed under MIT.
