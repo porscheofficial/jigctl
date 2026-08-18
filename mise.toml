@@ -1,6 +1,10 @@
 [tools]
 uv = "0.12.5"
 "pipx:check-jsonschema" = "0.38.0"
+go = "1.26.6"
+"aqua:mvdan/gofumpt" = "0.11.0"
+"aqua:golangci/golangci-lint" = "2.12.2"
+"go:go.uber.org/nilaway/cmd/nilaway" = "latest"
 
 [tasks.metaschema]
 description = "Validate the HCR schema against its own metaschema"
@@ -17,3 +21,11 @@ run = "uv run --script tools/schema-shape.py"
 [tasks.check]
 description = "Everything CI runs, in CI's order"
 depends = ["metaschema", "corpus", "shape"]
+
+[tasks.lint]
+description = "Run gofumpt, golangci-lint and nilaway over the Go module"
+run = "gofumpt -l . && golangci-lint run ./... && nilaway ./..."
+
+[tasks.test]
+description = "Run the Go test suite with race detection and shuffled ordering"
+run = "go test ./... -race -shuffle=on -count=1"

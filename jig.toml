@@ -1,0 +1,4 @@
+# jigctl configuration for this repo.
+# jigctl is single-service at this milestone: there is no services/ directory,
+# so the effective record set is repo-only.
+service_globs = []

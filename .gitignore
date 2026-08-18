@@ -1,3 +1,6 @@
 .omo/
 .jig-tmp/
 .DS_Store
+
+# built binary from `go build ./cmd/jigctl`
+/jigctl

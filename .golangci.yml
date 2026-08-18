@@ -1,0 +1,147 @@
+# golangci-lint v2 configuration for jigctl.
+#
+# jigctl is a CLI (cmd/jigctl, package main, cobra) backed by a validation
+# library (internal/hcr) and an embedded schema (schema/). There is no HTTP
+# server and no SQL access anywhere in this codebase, so linters aimed at
+# those concerns (rowserrcheck, sqlclosecheck) are intentionally omitted.
+# bodyclose/noctx/contextcheck-style linters are still enabled because the
+# CLI may eventually make outbound HTTP calls (e.g. fetching remote HCRs);
+# they are no-ops today and become load-bearing the moment that code lands.
+version: "2"
+
+run:
+  timeout: 5m
+  tests: true
+  modules-download-mode: readonly
+
+linters:
+  default: none
+  enable:
+    - errcheck
+    - govet
+    - staticcheck
+    - unused
+    - ineffassign
+    - revive
+    - gocritic
+    - exhaustive
+    - errorlint
+    - bodyclose
+    - noctx
+    - wrapcheck
+    - nilerr
+    - makezero
+    - prealloc
+    - unconvert
+    - unparam
+    - wastedassign
+    - dupl
+    - gocyclo
+    - funlen
+    - lll
+    - misspell
+    - godot
+    - nolintlint
+    - forbidigo
+
+  settings:
+    errcheck:
+      check-type-assertions: true
+      check-blank: true
+
+    govet:
+      enable:
+        - shadow
+      settings:
+        shadow:
+          strict: true
+
+    # Load-bearing: this is what makes the sealed-interface sum type real.
+    # A `default:` case in a switch must NOT excuse missing every named
+    # case, so "signifies exhaustive" stays disabled below.
+    exhaustive:
+      check:
+        - switch
+        - map
+      default-signifies-exhaustive: false
+
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+
+    gocyclo:
+      min-complexity: 15
+
+    funlen:
+      lines: 60
+      statements: 40
+      ignore-comments: true
+
+    lll:
+      line-length: 120
+      tab-width: 4
+
+    dupl:
+      threshold: 100
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+
+    # fmt.Print* is fine in cmd/jigctl (that's the whole point of a CLI);
+    # it is forbidden everywhere else (internal/hcr, schema/) via the
+    # linters.exclusions.rules carve-out below, which disables forbidigo
+    # only for paths under cmd/.
+    forbidigo:
+      forbid:
+        - pattern: '^fmt\.Print.*'
+          msg: "library code must not print directly; only cmd/jigctl may print to stdout"
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+
+    revive:
+      severity: warning
+      rules:
+        - name: var-naming
+        - name: package-comments
+        - name: exported
+        - name: error-return
+        - name: error-naming
+        - name: errorf
+        - name: if-return
+        - name: indent-error-flow
+        - name: unreachable-code
+        - name: redefines-builtin-id
+        - name: superfluous-else
+
+  exclusions:
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      # fmt.Print* is the CLI's job; forbidigo stays enforced everywhere else.
+      - path: ^cmd/
+        linters:
+          - forbidigo
+      - path: _test\.go
+        linters:
+          - dupl
+          - funlen
+          - lll
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
