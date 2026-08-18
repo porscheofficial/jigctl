@@ -48,8 +48,10 @@ func TestTree(t *testing.T) {
 
 			mustNoError(t, validationErr)
 			actualKeys := make([]string, 0, len(diagnostics))
+			absFixture, absErr := filepath.Abs(fixture)
+			mustNoError(t, absErr)
 			for _, diagnostic := range diagnostics {
-				relative, relativeErr := filepath.Rel(fixture, diagnostic.File)
+				relative, relativeErr := filepath.Rel(absFixture, diagnostic.File)
 				mustNoError(t, relativeErr)
 				actualKeys = append(actualKeys, strings.Join([]string{filepath.ToSlash(relative), diagnostic.Pointer, diagnostic.Code}, "\x00"))
 			}

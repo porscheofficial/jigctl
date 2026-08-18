@@ -16,6 +16,8 @@ enforced_by:
 ---
 
 `docs: docs/policy-notes.md#retention-window` is this fixture's single
-violation. `docs/policy-notes.md` does not exist under this fixture's tree
-root and is not created here; that absence, and later the anchor mismatch
-once the file is added, is exactly what R-110 exists to catch.
+violation. `docs/policy-notes.md` exists and contains headings (`# Policy notes`,
+`## Data handling`), none of which slug to `retention-window`, so the violation
+is an unresolvable anchor rather than a missing path. This matters because if
+the file were absent the rule would take the path-missing branch and the slug
+algorithm would never execute while `expect.yaml` still went green.

@@ -29,7 +29,7 @@ func compiledSchema() (*jsonschema.Schema, error) {
 			return
 		}
 		compiler := jsonschema.NewCompiler()
-		// No URLLoader is registered: references cannot trigger network access.
+		// No URL loader is registered: references cannot trigger network access.
 		if err := compiler.AddResource(schemaURL, document); err != nil {
 			compileErr = fmt.Errorf("add embedded HCR schema: %w", err)
 			return

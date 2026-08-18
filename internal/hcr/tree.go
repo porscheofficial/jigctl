@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/goccy/go-yaml"
 )
 
 type treeConfig struct {
@@ -126,14 +127,47 @@ func ValidateTree(root string) ([]Diagnostic, error) {
 	if err != nil {
 		return nil, err
 	}
+	canonicalRoot, err := filepath.Abs(filepath.Clean(root))
+	if err != nil {
+		return nil, fmt.Errorf("canonicalize tree root %s: %w", root, err)
+	}
+
 	diagnostics := make([]Diagnostic, 0)
+	identityIndex := make(map[string]bool)
+	var emitters []emitterRecord
+
 	for _, record := range records {
 		recordDiagnostics, validationErr := schemaDiagnostics(record.path, record.source)
 		if validationErr != nil {
 			return nil, validationErr
 		}
 		diagnostics = append(diagnostics, recordDiagnostics...)
+
+		relPath, relErr := filepath.Rel(canonicalRoot, record.path)
+		if relErr != nil {
+			return nil, fmt.Errorf("relativize %s: %w", record.path, relErr)
+		}
+
+		var meta parsedMeta
+		if fm, present := extractFrontmatter(record.source); present {
+			_ = yaml.Unmarshal(fm, &meta) //nolint:errcheck // schema layer already validates well-formedness
+		}
+
+		if idPattern.MatchString(meta.ID) {
+			identityIndex[meta.ID] = true
+		}
+
+		if len(recordDiagnostics) == 0 {
+			emitters = append(emitters, emitterRecord{
+				path:    record.path,
+				relPath: relPath,
+				service: record.service,
+				meta:    meta,
+			})
+		}
 	}
+
+	applyMetaRules(canonicalRoot, identityIndex, emitters, &diagnostics)
 	sortDiagnostics(diagnostics)
 	return diagnostics, nil
 }

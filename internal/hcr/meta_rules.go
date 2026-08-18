@@ -1,0 +1,124 @@
+package hcr
+
+import (
+	"bufio"
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+)
+
+var (
+	whitespaceRegex = regexp.MustCompile(`\s+`)
+	nonSlugRegex    = regexp.MustCompile(`[^a-z0-9-]+`)
+	atxHeadingRegex = regexp.MustCompile(`^#{1,6}\s+`)
+)
+
+// jigctlSlug computes the slug for an ATX markdown heading according to the
+// exact jigctl rules.
+// 1. Strip the leading '#'s and surrounding whitespace.
+// 2. Lowercase.
+// 3. Replace each run of whitespace with a single '-'.
+// 4. Delete every character outside [a-z0-9-].
+//
+// Limitations (deliberate):
+//   - This is NOT GitHub-style. A file with two `## API` headings has anchors `#api` and `#api-1`
+//     under GitHub's rules. The jigctl slug maps both headings to `#api`, so it accepts `#api` but
+//     rejects `#api-1`, which GitHub considers valid.
+//   - It does not strip markdown emphasis or inline code backticks from heading text.
+func jigctlSlug(heading string) string {
+	s := strings.TrimLeft(heading, "#")
+	s = strings.TrimSpace(s)
+	s = strings.ToLower(s)
+	s = whitespaceRegex.ReplaceAllString(s, "-")
+	s = nonSlugRegex.ReplaceAllString(s, "")
+	return s
+}
+
+// applyR110 ensures docs anchors resolve without network I/O.
+func applyR110(canonicalRoot string, emitters []emitterRecord, diagnostics *[]Diagnostic) {
+	for _, e := range emitters {
+		for i, binding := range e.meta.EnforcedBy {
+			if binding.Kind != "external" || binding.Docs == "" {
+				continue
+			}
+
+			parts := strings.SplitN(binding.Docs, "#", 2)
+			if len(parts) == 0 {
+				continue
+			}
+			pathPart := parts[0]
+
+			if strings.Contains(pathPart, "://") {
+				continue
+			}
+
+			resolvedPath := filepath.Join(canonicalRoot, pathPart)
+			if _, err := os.Stat(resolvedPath); err != nil {
+				if os.IsNotExist(err) {
+					*diagnostics = append(*diagnostics, Diagnostic{
+						File:    e.path,
+						Pointer: fmt.Sprintf("/enforced_by/%d/docs", i),
+						Code:    "R-110",
+						Message: fmt.Sprintf("docs path %s does not exist", pathPart),
+					})
+				}
+				continue
+			}
+
+			if len(parts) > 1 {
+				anchor := parts[1]
+				if !hasAnchor(resolvedPath, anchor) {
+					*diagnostics = append(*diagnostics, Diagnostic{
+						File:    e.path,
+						Pointer: fmt.Sprintf("/enforced_by/%d/docs", i),
+						Code:    "R-110",
+						Message: fmt.Sprintf("docs anchor #%s not found in %s", anchor, pathPart),
+					})
+				}
+			}
+		}
+	}
+}
+
+func hasAnchor(path, anchor string) bool {
+	f, err := os.Open(path)
+	if err != nil {
+		return false
+	}
+	defer f.Close()
+
+	scanner := bufio.NewScanner(f)
+	for scanner.Scan() {
+		line := scanner.Text()
+		if atxHeadingRegex.MatchString(line) {
+			if jigctlSlug(line) == anchor {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// applyR112 ensures the filename begins with its ID.
+func applyR112(emitters []emitterRecord, diagnostics *[]Diagnostic) {
+	for _, e := range emitters {
+		if e.meta.ID == "" {
+			continue
+		}
+
+		base := filepath.Base(e.path)
+		pattern := "^" + regexp.QuoteMeta(e.meta.ID) + `-[a-z0-9]+(-[a-z0-9]+)*\.md$`
+
+		matched, err := regexp.MatchString(pattern, base)
+		if err == nil && !matched {
+			*diagnostics = append(*diagnostics, Diagnostic{
+				File:    e.path,
+				Pointer: "/id",
+				Code:    "R-112",
+				Message: fmt.Sprintf("filename %s does not match id %s", base, e.meta.ID),
+			})
+		}
+	}
+}
