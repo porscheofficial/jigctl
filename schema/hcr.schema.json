@@ -132,7 +132,7 @@
             "type": "string"
           },
           "ref": {
-            "description": "Optional deduplication key. Bindings sharing a `ref` must carry a byte-identical `run`, so many records can be satisfied by one execution instead of one run per record.",
+            "description": "Optional deduplication key. Bindings sharing a `ref` must carry byte-identical `run` after YAML decoding -- decoding discards quoting style, so `run: \"make lint\"` and `run: make lint` are the same value -- so many records can be satisfied by one execution instead of one run per record.",
             "type": "string"
           },
           "select": {

@@ -20,7 +20,4 @@ rather than suppressing the rule inline.
 <!-- jig:expect
 valid: true
 covers: [R-012, R-025]
-deferred:
-  - rule: R-104
-    reason: requires-filesystem
 -->

@@ -20,7 +20,4 @@ an exception from the platform team instead of silently vendoring the code.
 <!-- jig:expect
 valid: true
 covers: [R-016]
-deferred:
-  - rule: R-110
-    reason: requires-filesystem
 -->
