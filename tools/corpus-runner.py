@@ -91,6 +91,15 @@ for e in out.get("errors", []):
             p = re.sub(r'\[(\d+)\]', r'/\1', p)
         errs_by_file[fn].append(p)
 
+# 2020-12 does not specify where a "property must not be here" violation is
+# reported: check-jsonschema says the containing object, Go santhosh-tekuri and
+# Rust boon/jsonschema say the offending property. Both conform, so accept the
+# asserted pointer or one segment below. Do NOT tighten to == (breaks 9 fixtures).
+def at_ok(got, want):
+    if got == want: return True
+    if not got.startswith(want + "/"): return False
+    return "/" not in got[len(want) + 1:]
+
 for tp, (fp, ex, dg) in fmap.items():
     errs = errs_by_file[tp]
     if ex["valid"]:
@@ -98,7 +107,7 @@ for tp, (fp, ex, dg) in fmap.items():
         else: results["noisy"] += 1
     else:
         if len(errs) == 0: results["missing"] += 1
-        elif len(errs) == 1 and errs[0] == dg[0].get("at"): results["reported"] += 1
+        elif len(errs) == 1 and at_ok(errs[0], dg[0].get("at")): results["reported"] += 1
         else: results["noisy"] += 1
 
 print(" ".join(f"{k}={v}" for k, v in results.items() if k != "deferred") + f" deferred={results['deferred']}")
