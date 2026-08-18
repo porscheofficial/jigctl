@@ -19,12 +19,3 @@ under the `## [Unreleased]` heading in `CHANGELOG.md` before requesting
 review. Reviewers should bounce a PR that skips this back to the author
 rather than adding the entry themselves.
 
-<!-- jig:expect
-valid: true
-covers: [R-004, R-015]
-deferred:
-  - rule: R-101
-    reason: requires-cross-file-resolution
-  - rule: R-112
-    reason: requires-filesystem
--->

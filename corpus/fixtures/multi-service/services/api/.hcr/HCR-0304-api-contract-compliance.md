@@ -18,12 +18,3 @@ know it is the same check architecture relies on for contract stability.
 Do not fork this into a second script: if the check needs to change,
 change `scripts/check-api-contracts.sh` once and both records benefit.
 
-<!-- jig:expect
-valid: true
-covers: [R-004, R-012]
-deferred:
-  - rule: R-103
-    reason: requires-cross-file-resolution
-  - rule: R-109
-    reason: requires-cross-file-resolution
--->

@@ -18,12 +18,3 @@ the api service's request or response shapes. It diffs the live OpenAPI
 spec against the last published contract and fails on a breaking change
 that was not explicitly versioned.
 
-<!-- jig:expect
-valid: true
-covers: [R-004, R-012]
-deferred:
-  - rule: R-103
-    reason: requires-cross-file-resolution
-  - rule: R-108
-    reason: requires-cross-file-resolution
--->

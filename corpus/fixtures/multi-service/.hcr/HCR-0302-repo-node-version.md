@@ -19,7 +19,3 @@ Keep `engines.node` in the root `package.json` set to `20.x`. If a service
 needs a newer runtime, open a repo-wide discussion first rather than
 drifting one service's toolchain out from under this pin.
 
-<!-- jig:expect
-valid: true
-covers: [R-004, R-013]
--->

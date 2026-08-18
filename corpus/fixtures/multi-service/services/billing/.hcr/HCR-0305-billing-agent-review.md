@@ -20,7 +20,3 @@ rounding or precision change to a human reviewer, not to gate the merge
 on its own. Treat a flagged diff as a prompt to double-check the math,
 not as a defect report to argue with.
 
-<!-- jig:expect
-valid: true
-covers: [R-004, R-017]
--->
