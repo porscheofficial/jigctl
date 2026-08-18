@@ -22,6 +22,13 @@ func assertExpectationsFrozen(t *testing.T) {
 	t.Helper()
 	// This backstop surfaces expectation edits for review; it cannot prevent
 	// someone from editing both a fixture and the frozen digest.
+	//
+	// The digest is byte-exact over the matched expectation blocks, so it is
+	// deliberately sensitive to line-ending changes as well as content
+	// changes. .gitattributes pins *.md text eol=lf, so a CRLF fixture cannot
+	// reach this repository through git. Over-sensitivity is the intended
+	// direction for an anti-tamper check; do not narrow it by normalising
+	// \r before hashing.
 	digest, err := expectationDigest()
 	mustNoError(t, err)
 	path := filepath.Join("testdata", "expectations.sha256")

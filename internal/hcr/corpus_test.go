@@ -13,7 +13,7 @@ import (
 
 const corpusRoot = "../../corpus"
 
-var expectationPattern = regexp.MustCompile(`(?s)<!--\s*jig:expect\n(.*?)\n-->`)
+var expectationPattern = regexp.MustCompile(`(?s)<!--\s*jig:expect\r?\n(.*?)\r?\n-->`)
 
 type recordExpectation struct {
 	Valid       *bool                   `yaml:"valid"`
@@ -196,5 +196,27 @@ func TestIssue156_pruned_walk_reports_one_diagnostic_at_asserted_pointer(t *test
 			t.Fatalf("want asserted pointer %q (or conforming child), got %q", wants[index], diagnostics[0].Pointer)
 		}
 		mustEqual(t, "schema", diagnostics[0].Code)
+	}
+}
+
+func TestExpectationBlockParsesUnderCRLF(t *testing.T) {
+	path := filepath.Join(corpusRoot, "records", "r001-bad-id-format.md")
+	source, err := os.ReadFile(path)
+	mustNoError(t, err)
+
+	crlf := strings.ReplaceAll(strings.ReplaceAll(string(source), "\r\n", "\n"), "\n", "\r\n")
+
+	expectation, validShape := parseRecordExpectation([]byte(crlf))
+	if !validShape {
+		t.Fatal("expectation block not found or invalid under CRLF")
+	}
+	if expectation.Valid == nil || *expectation.Valid {
+		t.Fatalf("want valid=false, got %v", expectation.Valid)
+	}
+	if len(expectation.Covers) != 1 || expectation.Covers[0] != "R-001" {
+		t.Fatalf("want covers=[R-001], got %v", expectation.Covers)
+	}
+	if len(expectation.Diagnostics) != 1 || expectation.Diagnostics[0].Rule != "R-001" || expectation.Diagnostics[0].At != "/id" {
+		t.Fatalf("unexpected diagnostics under CRLF: %+v", expectation.Diagnostics)
 	}
 }
