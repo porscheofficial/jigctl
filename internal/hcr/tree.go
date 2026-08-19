@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/BurntSushi/toml"
 	"github.com/goccy/go-yaml"
@@ -132,6 +133,7 @@ func indexTree(root string) ([]indexedRecord, error) {
 // ValidateTree validates each directly indexed record once. Wave 4 extends
 // this indexed layer with META rules while preserving this operational contract.
 func ValidateTree(root string) ([]Diagnostic, error) {
+	currentDate := utcDateOf(time.Now())
 	canonicalRoot, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		return nil, fmt.Errorf("canonicalize tree root %s: %w", root, err)
@@ -180,7 +182,10 @@ func ValidateTree(root string) ([]Diagnostic, error) {
 		}
 	}
 
-	applyMetaRules(canonicalRoot, config.Rationale, identityIndex, emitters, &diagnostics)
+	applyMetaRules(metaRuleContext{
+		canonicalRoot: canonicalRoot, rationaleMapping: config.Rationale,
+		identityIndex: identityIndex, currentDate: currentDate,
+	}, emitters, &diagnostics)
 	sortDiagnostics(diagnostics)
 	return diagnostics, nil
 }

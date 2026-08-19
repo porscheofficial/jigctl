@@ -1,0 +1,4 @@
+diagnostics:
+  - file: .hcr/HCR-0510-expired-exception.md
+    at: /exceptions/0/until
+    rule: R-107

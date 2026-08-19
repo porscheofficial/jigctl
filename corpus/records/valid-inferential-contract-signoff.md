@@ -16,7 +16,4 @@ judgement call that a human owns, not something a command can decide.
 <!-- jig:expect
 valid: true
 covers: [R-010]
-deferred:
-  - rule: R-106
-    reason: requires-cli
 -->

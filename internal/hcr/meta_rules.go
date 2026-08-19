@@ -7,13 +7,50 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 )
+
+const dateLayout = "2006-01-02"
 
 var (
 	whitespaceRegex = regexp.MustCompile(`\s+`)
 	nonSlugRegex    = regexp.MustCompile(`[^a-z0-9-]+`)
 	atxHeadingRegex = regexp.MustCompile(`^#{1,6}\s+`)
 )
+
+// utcDateOf discards the time of day, so that a waiver dated today stays in
+// force for all of today whatever the hour and whatever the caller's timezone.
+func utcDateOf(instant time.Time) time.Time {
+	utc := instant.UTC()
+	return time.Date(utc.Year(), utc.Month(), utc.Day(), 0, 0, 0, 0, time.UTC)
+}
+
+func applyR107(currentDate time.Time, emitters []emitterRecord, diagnostics *[]Diagnostic) {
+	for emitterIndex := range emitters {
+		emitter := &emitters[emitterIndex]
+		for exceptionIndex := range emitter.meta.Exceptions {
+			until := emitter.meta.Exceptions[exceptionIndex].Until
+			if until == "" {
+				continue
+			}
+			pointer := fmt.Sprintf("/exceptions/%d/until", exceptionIndex)
+			expiry, err := time.Parse(dateLayout, until)
+			if err != nil {
+				*diagnostics = append(*diagnostics, Diagnostic{
+					File: emitter.path, Pointer: pointer, Code: "R-107",
+					Message: fmt.Sprintf("exception until %s is not a calendar date", until),
+				})
+				continue
+			}
+			if expiry.Before(currentDate) {
+				*diagnostics = append(*diagnostics, Diagnostic{
+					File: emitter.path, Pointer: pointer, Code: "R-107",
+					Message: fmt.Sprintf("exception expired on %s", until),
+				})
+			}
+		}
+	}
+}
 
 // jigctlSlug computes the slug for an ATX markdown heading according to the
 // exact jigctl rules.

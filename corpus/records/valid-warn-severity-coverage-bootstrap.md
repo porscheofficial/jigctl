@@ -22,7 +22,4 @@ lower the threshold just to make a failure disappear.
 <!-- jig:expect
 valid: true
 covers: [R-006, R-007]
-deferred:
-  - rule: R-105
-    reason: requires-cli
 -->

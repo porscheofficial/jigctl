@@ -8,7 +8,9 @@ import (
 var idPattern = regexp.MustCompile(`^HCR-\d{4}$`)
 
 type parsedBinding struct {
-	Kind string `yaml:"kind"`
+	Kind     string   `yaml:"kind"`
+	Severity string   `yaml:"severity"`
+	Cadence  []string `yaml:"cadence"`
 	// Ref is interface{} rather than string because parsedMeta is decoded for every
 	// discovered record, including schema-INVALID ones, to populate identityIndex.
 	// If Ref were a string, a record with a non-string ref would fail decoding
@@ -19,13 +21,19 @@ type parsedBinding struct {
 	Docs string      `yaml:"docs"`
 }
 
+type parsedException struct {
+	Until string `yaml:"until"`
+}
+
 // parsedMeta holds fields needed for META rules.
 type parsedMeta struct {
-	ID         string          `yaml:"id"`
-	Supersedes string          `yaml:"supersedes"`
-	Rationale  string          `yaml:"rationale"`
-	EnforcedBy []parsedBinding `yaml:"enforced_by"`
-	Scope      string          `yaml:"scope"`
+	ID         string            `yaml:"id"`
+	State      string            `yaml:"state"`
+	Supersedes string            `yaml:"supersedes"`
+	Rationale  string            `yaml:"rationale"`
+	EnforcedBy []parsedBinding   `yaml:"enforced_by"`
+	Exceptions []parsedException `yaml:"exceptions"`
+	Scope      string            `yaml:"scope"`
 }
 
 type emitterRecord struct {

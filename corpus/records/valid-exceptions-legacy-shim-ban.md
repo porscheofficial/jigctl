@@ -24,7 +24,4 @@ other service must stay clean.
 <!-- jig:expect
 valid: true
 covers: [R-015, R-020, R-021]
-deferred:
-  - rule: R-107
-    reason: requires-cli
 -->

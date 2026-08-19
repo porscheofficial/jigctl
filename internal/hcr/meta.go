@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"time"
 )
 
 type bindingRef struct {
@@ -16,6 +17,13 @@ type bindingRef struct {
 	ref          string
 }
 
+type metaRuleContext struct {
+	canonicalRoot    string
+	rationaleMapping map[string]string
+	identityIndex    map[string]bool
+	currentDate      time.Time
+}
+
 // applyMetaRules delegates to individual rule implementations for META validations.
 // Decision D10: identityIndex contains every discovered record whose id matches
 // ^HCR-[0-9]{4}$, INCLUDING schema-failed ones. A record that failed the schema layer
@@ -23,18 +31,17 @@ type bindingRef struct {
 // an R-101 collision - but it IS in identityIndex, so it can still satisfy someone else's supersedes.
 // This asymmetry is deliberate.
 func applyMetaRules(
-	canonicalRoot string,
-	rationaleMapping map[string]string,
-	identityIndex map[string]bool,
+	context metaRuleContext,
 	emitters []emitterRecord,
 	diagnostics *[]Diagnostic,
 ) {
 	applyR101(emitters, diagnostics)
-	applyR102(identityIndex, emitters, diagnostics)
-	applyR103AndR104(canonicalRoot, emitters, diagnostics)
+	applyR102(context.identityIndex, emitters, diagnostics)
+	applyR103AndR104(context.canonicalRoot, emitters, diagnostics)
+	applyR107(context.currentDate, emitters, diagnostics)
 	applyR109(emitters, diagnostics)
-	applyR110(canonicalRoot, emitters, diagnostics)
-	applyR111(canonicalRoot, rationaleMapping, emitters, diagnostics)
+	applyR110(context.canonicalRoot, emitters, diagnostics)
+	applyR111(context.canonicalRoot, context.rationaleMapping, emitters, diagnostics)
 	applyR112(emitters, diagnostics)
 }
 
@@ -119,7 +126,7 @@ func applyR103AndR104(canonicalRoot string, emitters []emitterRecord, diagnostic
 				})
 			}
 			if binding.Run != "" {
-				applyR104(canonicalRoot, e, i, binding, diagnostics)
+				applyR104(canonicalRoot, e, i, &binding, diagnostics)
 			}
 		}
 	}
@@ -134,7 +141,7 @@ func applyR103AndR104(canonicalRoot string, emitters []emitterRecord, diagnostic
 // It resolves against canonicalRoot, not the record's directory. Existence only is
 // checked (no executable bit), leading ./ is not special-cased, and symlinks are
 // not followed specially (os.Stat semantics).
-func applyR104(canonicalRoot string, e *emitterRecord, i int, binding parsedBinding, diagnostics *[]Diagnostic) {
+func applyR104(canonicalRoot string, e *emitterRecord, i int, binding *parsedBinding, diagnostics *[]Diagnostic) {
 	tokens := strings.Fields(binding.Run)
 	if len(tokens) > 0 && strings.Contains(tokens[0], "/") {
 		runPath := filepath.Join(canonicalRoot, tokens[0])
