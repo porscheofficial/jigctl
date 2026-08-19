@@ -12,7 +12,8 @@ import (
 )
 
 type treeConfig struct {
-	ServiceGlobs []string `toml:"service_globs"`
+	ServiceGlobs []string          `toml:"service_globs"`
+	Rationale    map[string]string `toml:"rationale"`
 }
 
 type indexedRecord struct {
@@ -28,9 +29,9 @@ func discoverServices(root string) ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("canonicalize tree root %s: %w", root, err)
 	}
-	var config treeConfig
-	if _, decodeErr := toml.DecodeFile(filepath.Join(canonicalRoot, "jig.toml"), &config); decodeErr != nil {
-		return nil, fmt.Errorf("read jig.toml: %w", decodeErr)
+	config, err := readTreeConfig(canonicalRoot)
+	if err != nil {
+		return nil, err
 	}
 	matched := make([]string, 0)
 	for _, pattern := range config.ServiceGlobs {
@@ -52,6 +53,14 @@ func discoverServices(root string) ([]string, error) {
 		}
 	}
 	return canonicalServices(canonicalRoot, matched)
+}
+
+func readTreeConfig(canonicalRoot string) (treeConfig, error) {
+	var config treeConfig
+	if _, err := toml.DecodeFile(filepath.Join(canonicalRoot, "jig.toml"), &config); err != nil {
+		return treeConfig{}, fmt.Errorf("read jig.toml: %w", err)
+	}
+	return config, nil
 }
 
 func canonicalServices(root string, matched []string) ([]string, error) {
@@ -123,13 +132,17 @@ func indexTree(root string) ([]indexedRecord, error) {
 // ValidateTree validates each directly indexed record once. Wave 4 extends
 // this indexed layer with META rules while preserving this operational contract.
 func ValidateTree(root string) ([]Diagnostic, error) {
-	records, err := indexTree(root)
-	if err != nil {
-		return nil, err
-	}
 	canonicalRoot, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		return nil, fmt.Errorf("canonicalize tree root %s: %w", root, err)
+	}
+	config, err := readTreeConfig(canonicalRoot)
+	if err != nil {
+		return nil, err
+	}
+	records, err := indexTree(canonicalRoot)
+	if err != nil {
+		return nil, err
 	}
 
 	diagnostics := make([]Diagnostic, 0)
@@ -167,7 +180,7 @@ func ValidateTree(root string) ([]Diagnostic, error) {
 		}
 	}
 
-	applyMetaRules(canonicalRoot, identityIndex, emitters, &diagnostics)
+	applyMetaRules(canonicalRoot, config.Rationale, identityIndex, emitters, &diagnostics)
 	sortDiagnostics(diagnostics)
 	return diagnostics, nil
 }

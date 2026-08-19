@@ -21,7 +21,4 @@ and the referenced decision instead.
 <!-- jig:expect
 valid: true
 covers: [R-022, R-023]
-deferred:
-  - rule: R-111
-    reason: requires-cli
 -->

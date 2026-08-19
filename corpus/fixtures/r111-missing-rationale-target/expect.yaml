@@ -1,0 +1,4 @@
+diagnostics:
+  - file: .hcr/HCR-0509-rationale-target-check.md
+    at: /rationale
+    rule: R-111

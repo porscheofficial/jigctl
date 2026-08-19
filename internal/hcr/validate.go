@@ -23,6 +23,7 @@ type parsedBinding struct {
 type parsedMeta struct {
 	ID         string          `yaml:"id"`
 	Supersedes string          `yaml:"supersedes"`
+	Rationale  string          `yaml:"rationale"`
 	EnforcedBy []parsedBinding `yaml:"enforced_by"`
 	Scope      string          `yaml:"scope"`
 }

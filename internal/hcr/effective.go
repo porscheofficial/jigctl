@@ -104,7 +104,8 @@ func EffectiveSet(s Service) []Record {
 // A record directly inside <root>/.hcr/ MUST declare scope: repo.
 // A record directly inside <serviceDir>/.hcr/ MUST declare scope: service.
 func applyR109(emitters []emitterRecord, diagnostics *[]Diagnostic) {
-	for _, e := range emitters {
+	for i := range emitters {
+		e := &emitters[i]
 		expected := "repo"
 		if e.service != "" {
 			expected = "service"

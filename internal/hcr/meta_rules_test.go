@@ -2,8 +2,83 @@ package hcr
 
 import (
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 )
+
+func TestApplyR111(t *testing.T) {
+	root := t.TempDir()
+	writeArtifact := func(relative string) {
+		t.Helper()
+		path := filepath.Join(root, relative)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("create artifact directory: %v", err)
+		}
+		if err := os.WriteFile(path, []byte("artifact\n"), 0o600); err != nil {
+			t.Fatalf("write artifact: %v", err)
+		}
+	}
+	writeArtifact("docs/adr/0001-existing.md")
+	writeArtifact("evidence/NOTE-0002.txt")
+
+	cases := []struct {
+		name      string
+		mapping   map[string]string
+		rationale string
+		wantCount int
+	}{
+		{
+			name:      "unmapped prefix is skipped",
+			mapping:   map[string]string{"ADR": "docs/adr/{rest}-*.md"},
+			rationale: "RFC-0009",
+			wantCount: 0,
+		},
+		{
+			name:      "rest substitution resolves an existing target",
+			mapping:   map[string]string{"ADR": "docs/adr/{rest}-*.md"},
+			rationale: "ADR-0001",
+			wantCount: 0,
+		},
+		{
+			name:      "missing mapped target is reported",
+			mapping:   map[string]string{"ADR": "docs/adr/{rest}-*.md"},
+			rationale: "ADR-0009",
+			wantCount: 1,
+		},
+		{
+			name:      "id substitution resolves an existing target",
+			mapping:   map[string]string{"NOTE": "evidence/{id}.txt"},
+			rationale: "NOTE-0002",
+			wantCount: 0,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			// Given
+			emitters := []emitterRecord{{path: "record.md", meta: parsedMeta{Rationale: tc.rationale}}}
+			var diagnostics []Diagnostic
+
+			// When
+			applyR111(root, tc.mapping, emitters, &diagnostics)
+
+			// Then
+			if len(diagnostics) != tc.wantCount {
+				t.Fatalf("got %d diagnostics, want %d: %v", len(diagnostics), tc.wantCount, diagnostics)
+			}
+			if tc.wantCount == 1 {
+				diagnostic := diagnostics[0]
+				if diagnostic.Code != "R-111" {
+					t.Errorf("got Code %q, want R-111", diagnostic.Code)
+				}
+				if diagnostic.Pointer != "/rationale" {
+					t.Errorf("got Pointer %q, want /rationale", diagnostic.Pointer)
+				}
+			}
+		})
+	}
+}
 
 func TestApplyR112(t *testing.T) {
 	cases := []struct {

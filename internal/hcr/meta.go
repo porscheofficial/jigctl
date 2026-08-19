@@ -24,6 +24,7 @@ type bindingRef struct {
 // This asymmetry is deliberate.
 func applyMetaRules(
 	canonicalRoot string,
+	rationaleMapping map[string]string,
 	identityIndex map[string]bool,
 	emitters []emitterRecord,
 	diagnostics *[]Diagnostic,
@@ -33,19 +34,22 @@ func applyMetaRules(
 	applyR103AndR104(canonicalRoot, emitters, diagnostics)
 	applyR109(emitters, diagnostics)
 	applyR110(canonicalRoot, emitters, diagnostics)
+	applyR111(canonicalRoot, rationaleMapping, emitters, diagnostics)
 	applyR112(emitters, diagnostics)
 }
 
 // applyR101 enforces id uniqueness across the whole tree.
 func applyR101(emitters []emitterRecord, diagnostics *[]Diagnostic) {
 	emitterIDs := make(map[string][]string)
-	for _, e := range emitters {
+	for i := range emitters {
+		e := &emitters[i]
 		if e.meta.ID != "" {
 			emitterIDs[e.meta.ID] = append(emitterIDs[e.meta.ID], e.relPath)
 		}
 	}
 
-	for _, e := range emitters {
+	for i := range emitters {
+		e := &emitters[i]
 		if e.meta.ID != "" {
 			others := make([]string, 0, len(emitterIDs[e.meta.ID])-1)
 			for _, p := range emitterIDs[e.meta.ID] {
@@ -76,7 +80,8 @@ func applyR101(emitters []emitterRecord, diagnostics *[]Diagnostic) {
 //   - Consequence of D10: it checks identityIndex, not emitters, so a target that exists
 //     but failed the schema layer still satisfies R-102.
 func applyR102(identityIndex map[string]bool, emitters []emitterRecord, diagnostics *[]Diagnostic) {
-	for _, e := range emitters {
+	for i := range emitters {
+		e := &emitters[i]
 		if e.meta.Supersedes != "" {
 			if e.meta.Supersedes == e.meta.ID {
 				*diagnostics = append(*diagnostics, Diagnostic{
@@ -101,7 +106,8 @@ func applyR102(identityIndex map[string]bool, emitters []emitterRecord, diagnost
 func applyR103AndR104(canonicalRoot string, emitters []emitterRecord, diagnostics *[]Diagnostic) {
 	refs := make(map[string][]bindingRef)
 
-	for _, e := range emitters {
+	for emitterIndex := range emitters {
+		e := &emitters[emitterIndex]
 		for i, binding := range e.meta.EnforcedBy {
 			if refStr, ok := binding.Ref.(string); ok && refStr != "" {
 				refs[refStr] = append(refs[refStr], bindingRef{
@@ -113,7 +119,7 @@ func applyR103AndR104(canonicalRoot string, emitters []emitterRecord, diagnostic
 				})
 			}
 			if binding.Run != "" {
-				applyR104(canonicalRoot, &e, i, binding, diagnostics)
+				applyR104(canonicalRoot, e, i, binding, diagnostics)
 			}
 		}
 	}

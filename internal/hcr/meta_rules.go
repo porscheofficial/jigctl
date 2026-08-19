@@ -38,7 +38,8 @@ func jigctlSlug(heading string) string {
 
 // applyR110 ensures docs anchors resolve without network I/O.
 func applyR110(canonicalRoot string, emitters []emitterRecord, diagnostics *[]Diagnostic) {
-	for _, e := range emitters {
+	for emitterIndex := range emitters {
+		e := &emitters[emitterIndex]
 		for i, binding := range e.meta.EnforcedBy {
 			if binding.Kind != "external" || binding.Docs == "" {
 				continue
@@ -101,9 +102,40 @@ func hasAnchor(path, anchor string) bool {
 	return false
 }
 
+// applyR111 ensures mapped rationale references resolve against the tree root.
+func applyR111(canonicalRoot string, mapping map[string]string, emitters []emitterRecord, diagnostics *[]Diagnostic) {
+	for i := range emitters {
+		e := &emitters[i]
+		id := e.meta.Rationale
+		if id == "" {
+			continue
+		}
+		parts := strings.SplitN(id, "-", 2)
+		if len(parts) < 2 {
+			continue
+		}
+		pattern, mapped := mapping[parts[0]]
+		if !mapped {
+			continue
+		}
+		pattern = strings.ReplaceAll(pattern, "{id}", id)
+		pattern = strings.ReplaceAll(pattern, "{rest}", parts[1])
+		matches, globErr := filepath.Glob(filepath.Join(canonicalRoot, pattern))
+		if globErr != nil || len(matches) == 0 {
+			*diagnostics = append(*diagnostics, Diagnostic{
+				File:    e.path,
+				Pointer: "/rationale",
+				Code:    "R-111",
+				Message: fmt.Sprintf("rationale target %s does not exist", pattern),
+			})
+		}
+	}
+}
+
 // applyR112 ensures the filename begins with its ID.
 func applyR112(emitters []emitterRecord, diagnostics *[]Diagnostic) {
-	for _, e := range emitters {
+	for i := range emitters {
+		e := &emitters[i]
 		if e.meta.ID == "" {
 			continue
 		}

@@ -1,0 +1,4 @@
+service_globs = []
+
+[rationale]
+ADR = "docs/adr/{rest}-*.md"
