@@ -3,7 +3,7 @@ id: HCR-0407
 title: Fixture expectations are never edited to make jigctl pass
 scope: repo
 regulates: architecture-fitness
-summary: "Whether an edit to a fixture's valid, at, or covers expectation is a legitimate specification change or a quiet cover-up for a validator regression is invisible from the fixture's own diff — the file by itself only shows that an expectation changed, never why. Answering that requires comparing two artifacts that live apart entirely — the fixture, which is the spec, and internal/hcr's actual behavior on it, which is the implementation — and asking whether the implementation was fixed to match a still-correct expectation, or the expectation was loosened to match a broken implementation. That comparison is exactly the property docs/concepts.md assigns to architecture-fitness: nothing wrong is visible in either file read alone, and the defect, if any, exists only in the relationship between them, the same shape as a circular import."
+summary: "corpus/ is normative. When jigctl disagrees with a fixture's declared valid, at or covers, fix jigctl — never the expectation. A fixture diff shows that an expectation changed, never whether the change was justified."
 state: enforced
 enforced_by:
   - kind: inferential
@@ -19,3 +19,9 @@ visible, deliberate act in review; that hash can show that an
 expectation changed, never whether the change was justified, which is
 why enforcement here is a human editorial judgement call and not
 something a command can run.
+
+Classified `architecture-fitness`: deciding whether an edit is a
+legitimate specification change or a cover-up for a validator regression
+means comparing two artifacts that live apart — the fixture, which is
+the spec, and internal/hcr's actual behaviour on it. Neither read alone
+shows anything wrong.
