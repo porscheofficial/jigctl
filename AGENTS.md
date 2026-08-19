@@ -26,6 +26,9 @@ repo), not for agents consuming HCRs in some other repo.
   This governs real records (see `corpus/fixtures/multi-service/`), NOT the
   negative fixtures in `corpus/records/`, which are named `r<NNN>-<slug>.md`
   after the rule they falsify — several carry a malformed id or none at all.
+- Real records in `.hcr/` take ids in the `04xx` band; corpus fixtures
+  take ids outside it. This keeps a search for a real record's id from
+  landing in a deliberately broken fixture. See ADR-0002 for reasoning.
 - Run `mise run check` before proposing any change
   and again before merging.
 
