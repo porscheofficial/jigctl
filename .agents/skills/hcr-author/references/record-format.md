@@ -28,7 +28,9 @@ No other root keys are permitted. `severity` and `cadence` are **per-binding**
 fields and belong inside `enforced_by` items, never at the root.
 
 Everything below the frontmatter is the body: guidance for whoever hits the
-rule, plus the reasoning behind the classification. All rationale lives here.
+rule, plus the reasoning behind the classification. The argument itself always
+lives here. The `rationale` field above does not hold prose and does not
+replace it — it points at a decision recorded outside the harness.
 
 ## Three orthogonal axes
 

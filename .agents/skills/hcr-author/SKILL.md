@@ -125,7 +125,11 @@ Four rules override anything you infer from existing records:
   context the reader pays for and does not need.
 - **`exceptions[].reason` is at most 15 words** — what is exempt, and why. Name
   the specific thing. "Legacy" and "special case" are not reasons.
-- **Rationale belongs in the body**, never the frontmatter.
+- **Reasoning belongs in the body**, never the frontmatter. The optional
+  `rationale` field is the one exception, and it is not prose: it holds an
+  opaque reference to a decision recorded elsewhere, such as `ADR-0007`. Set
+  it when the rule implements a decision that is already written down, and
+  keep the argument for that decision in the body regardless.
 
 For everything else, match the house style: read two existing records and follow
 their body shape, heading structure and voice.
