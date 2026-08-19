@@ -50,6 +50,12 @@ recorded in git history. There is no status body section. Status lives in
 frontmatter only because the body is frozen after acceptance while status
 is not, making "the body is frozen" mechanically true.
 
+A frozen body must not carry values that drift. Counts of files, ids, or
+fixtures are inventory: they are correct on the day they are written and
+wrong soon after, and correcting them forever is the churn this format
+exists to avoid. State the rule and let anyone who needs the current
+numbers measure them.
+
 Supersession is two-sided. The new ADR names what it supersedes and the
 old one is flipped to superseded-by in the same commit. This repository
 already enforces exactly this shape for records through R-102, and a
