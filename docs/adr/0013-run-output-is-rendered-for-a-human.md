@@ -137,3 +137,38 @@ enforced rule from a forgotten one. A progress indicator was rejected
 reluctantly, since bindings execute in sequence and some take seconds,
 because live output and byte-determinism cannot be reconciled without
 maintaining two rendering paths.
+
+## Notes
+
+### 2026-08-20
+
+The Decision above puts each finding on its own `path:line` line. That
+holds for one finding shape and not for the rest, which was not known
+when this record was accepted.
+
+A finding addresses a file and a pointer, and the pointer means a
+different thing per binding kind. A `grep` forbid-match puts a line
+number there and is the only shape an editor can open. A `grep`
+missing-require names the glob pattern instead, because no single file
+is the offender. A `config-assert` finding carries an RFC 6901 pointer,
+which addresses a node rather than a line. A `command` finding has no
+locus at all, because an exit code has no location.
+
+What this refines is the syntax, not the decision. The detail block is
+still the part a reader navigates from. Navigability is per-shape: a
+line number renders as one only where a line number exists, and the
+other shapes render what they actually address. Padding them into a
+uniform syntax would send an editor to a line that is not there, which
+is worse than declining to offer the jump.
+
+Extending the locus with a line field was considered and rejected. A
+pointer is not a degenerate line number but a different kind of address,
+and flattening the two would cost the distinction that makes a
+config-assert finding actionable.
+
+One question this record did not consider is left open. A record bundles
+the guidance an agent reads with the binding that verifies it, and the
+detail block renders the summary but not the guidance body, which is
+discarded at parse time. Whether that body belongs in the detail block,
+and in what form, is a decision this record did not make and does not
+foreclose.
