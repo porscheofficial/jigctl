@@ -52,7 +52,14 @@ array:
 	plan := hcr.Plan{Root: tmp}
 	target := hcr.Target{}
 
-	realPlan := hcr.Plan{Root: "../../"} // root of repo
+	// A relative root is a shape ExecutionPlan cannot produce, and confine
+	// canonicalizes the base before making it absolute, so passing one made
+	// this case report an escape under a symlinked checkout.
+	repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatal(err)
+	}
+	realPlan := hcr.Plan{Root: repoRoot}
 
 	tests = append(tests, configAssertTestCase{
 		name: "real jig.toml rationale ADR correct",
