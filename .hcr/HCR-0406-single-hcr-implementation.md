@@ -12,6 +12,8 @@ enforced_by:
 exceptions:
   - scope: cmd/jigctl/main.go
     reason: "The CLI's sole process entrypoint, and the only place permitted to turn a validation result into a process exit code; every other file returns a value instead."
+  - scope: internal/runner/grep_test.go
+    reason: "Test file mocking a Go source file with an os.Exit call."
 ---
 HCR validation is implemented exactly once, in internal/hcr, as a plain
 library: it returns diagnostics and errors as data and never terminates
