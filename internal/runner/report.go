@@ -3,6 +3,7 @@ package runner
 import (
 	"fmt"
 	"io"
+	"path/filepath"
 	"sort"
 	"strings"
 
@@ -20,6 +21,30 @@ type bindingInfo struct {
 	Executable *hcr.ExecutableBinding
 	TargetKind string
 	TargetPath string
+	Locator    string
+}
+
+func relativize(plan *hcr.Plan, recordPath string) string {
+	if plan == nil {
+		return recordPath
+	}
+	rel, err := filepath.Rel(plan.Root, recordPath)
+	if err != nil {
+		return recordPath
+	}
+	return rel
+}
+
+// locate renders a record path relative to the tree root, as cmd/jigctl
+// already renders a diagnostic. The binding index is suffixed only for a
+// record declaring more than one, since an index that is always :0
+// distinguishes nothing and reads as a line number that does not exist.
+func locate(plan *hcr.Plan, recordPath string, bindingIndex, bindingsInRecord int) string {
+	display := relativize(plan, recordPath)
+	if bindingsInRecord > 1 {
+		return fmt.Sprintf("%s:%d", display, bindingIndex)
+	}
+	return display
 }
 
 func buildLookup(plan *hcr.Plan) map[BindingIdentity]bindingInfo {
@@ -27,6 +52,14 @@ func buildLookup(plan *hcr.Plan) map[BindingIdentity]bindingInfo {
 	if plan == nil {
 		return lookup
 	}
+
+	perRecord := make(map[string]int)
+	for i := range plan.Targets {
+		for j := range plan.Targets[i].Bindings {
+			perRecord[plan.Targets[i].Bindings[j].RecordPath]++
+		}
+	}
+
 	for i := range plan.Targets {
 		target := &plan.Targets[i]
 		for j := range target.Bindings {
@@ -38,6 +71,7 @@ func buildLookup(plan *hcr.Plan) map[BindingIdentity]bindingInfo {
 				Executable: b,
 				TargetKind: target.Kind,
 				TargetPath: target.Path,
+				Locator:    locate(plan, b.RecordPath, b.BindingIndex, perRecord[b.RecordPath]),
 			}
 		}
 	}
@@ -164,6 +198,36 @@ func updateCounts(proj Projection, counts *renderCounts) {
 	}
 }
 
+func projectionCode(proj Projection, r Reason) string {
+	switch proj {
+	case ProjectionPass:
+		return "pass"
+	case ProjectionViolation:
+		return "violation"
+	case ProjectionExpectedUnchecked, ProjectionBlockedUnchecked, ProjectionOperational:
+		return reasonCode(r)
+	case ProjectionInvalid:
+		return "unknown"
+	}
+	return "unknown"
+}
+
+// The schema defines summary as the text an agent is shown when the rule
+// fires, so it appears on a violation and nowhere else: a pass is carried by
+// the evidence appended after this, an unchecked outcome by its reason.
+func describe(v *Verdict, info bindingInfo, ok bool, proj Projection) string {
+	switch {
+	case !ok:
+		return fmt.Sprintf("[unknown] %s", reasonMessage(v.Reason()))
+	case proj == ProjectionViolation:
+		return fmt.Sprintf("[%s] %s", info.Executable.RecordID, info.Executable.Summary)
+	case proj == ProjectionPass || proj == ProjectionInvalid:
+		return fmt.Sprintf("[%s]", info.Executable.RecordID)
+	default:
+		return fmt.Sprintf("[%s] %s", info.Executable.RecordID, reasonMessage(v.Reason()))
+	}
+}
+
 func printLine(
 	opts RenderOptions,
 	v *Verdict,
@@ -173,28 +237,8 @@ func printLine(
 	proj Projection,
 	unwaivedCount int,
 ) {
-	var code string
-	switch proj {
-	case ProjectionPass:
-		code = "pass"
-	case ProjectionViolation:
-		code = "violation"
-	case ProjectionExpectedUnchecked, ProjectionBlockedUnchecked, ProjectionOperational:
-		code = reasonCode(v.Reason())
-	case ProjectionInvalid:
-		code = "unknown"
-	}
-
 	var msgBuilder strings.Builder
-	if ok {
-		fmt.Fprintf(&msgBuilder, "[%s] %s", info.Executable.RecordID, info.Executable.Summary)
-	} else {
-		fmt.Fprintf(&msgBuilder, "[unknown] %s", reasonMessage(v.Reason()))
-	}
-
-	if proj == ProjectionExpectedUnchecked || proj == ProjectionBlockedUnchecked || proj == ProjectionOperational {
-		fmt.Fprintf(&msgBuilder, " (%s)", reasonMessage(v.Reason()))
-	}
+	msgBuilder.WriteString(describe(v, info, ok, proj))
 
 	if rep.Kind == "command" && rep.Execution != nil {
 		dur := rep.Execution.Duration.String()
@@ -214,8 +258,14 @@ func printLine(
 		fmt.Fprintf(&msgBuilder, " [%d finding(s)]", unwaivedCount)
 	}
 
-	fmt.Fprintf(opts.Out, "%s:%d: %s: %s\n",
-		rep.Identity.RecordPath, rep.Identity.BindingIndex, code, msgBuilder.String())
+	locator := info.Locator
+	if locator == "" {
+		locator = fmt.Sprintf("%s:%d",
+			relativize(opts.Plan, rep.Identity.RecordPath), rep.Identity.BindingIndex)
+	}
+
+	fmt.Fprintf(opts.Out, "%s: %s: %s\n",
+		locator, projectionCode(proj, v.Reason()), msgBuilder.String())
 }
 
 func printSummary(out io.Writer, counts *renderCounts, numFiles int) {
@@ -236,45 +286,4 @@ func printSummary(out io.Writer, counts *renderCounts, numFiles int) {
 			counts.Findings, wordFindings, numFiles, wordFiles,
 			counts.ExpectedUnchecked, counts.BlockedUnchecked)
 	}
-}
-
-var reasonData = map[Reason]struct{ Code, Message string }{
-	ReasonNone:                          {"none", "OK"},
-	Reason(ReasonExecutableMissing):     {"executable-missing", "Executable is absent from PATH"},
-	Reason(ReasonExecutableDenied):      {"executable-denied", "Executable permission is denied"},
-	Reason(ReasonTimeout):               {"timeout", "Timeout expires"},
-	Reason(ReasonAuthorizationDenied):   {"authorization-denied", "Execution authorization is absent"},
-	Reason(ReasonGlobNoMatches):         {"glob-no-matches", "Grep glob matches no files"},
-	Reason(ReasonInputMissing):          {"input-missing", "Configuration data file is missing"},
-	Reason(ReasonInputUnreadable):       {"input-unreadable", "Data is unreadable"},
-	Reason(ReasonInputMalformed):        {"input-malformed", "Data is malformed"},
-	Reason(ReasonPointerMalformed):      {"pointer-malformed", "RFC 6901 pointer is malformed"},
-	Reason(ReasonPatternInvalid):        {"pattern-invalid", "matches cannot compile"},
-	Reason(ReasonScopeInvalid):          {"scope-invalid", "Scope has no valid shape"},
-	Reason(ReasonGlobInvalid):           {"glob-invalid", "Grep glob syntax is invalid"},
-	Reason(ReasonArgvInvalid):           {"argv-invalid", "Command argv cannot be split"},
-	Reason(ReasonFormatUnsupported):     {"format-unsupported", "Format is unsupported"},
-	Reason(ReasonModifierUnimplemented): {"modifier-unimplemented", "Binding has pattern or select"},
-	Reason(ReasonKindNotExecutable):     {"kind-not-executable", "Kind cannot execute"},
-	Reason(ReasonCadenceExcluded):       {"cadence-excluded", "Cadence excluded"},
-	Reason(ReasonRecordDraft):           {"record-draft", "Record is draft"},
-	Reason(ReasonRecordDeprecated):      {"record-deprecated", "Record is deprecated"},
-	Reason(ReasonProcessStart):          {"process-start", "Other process-start failure"},
-	Reason(ReasonPathEscapesRoot):       {"path-escapes-root", "Path escapes root"},
-	Reason(ReasonLimitExceeded):         {"limit-exceeded", "Output or read limit exceeded"},
-	Reason(ReasonInvocationCancelled):   {"invocation-cancelled", "Invocation is cancelled"},
-}
-
-func reasonCode(r Reason) string {
-	if data, ok := reasonData[r]; ok {
-		return data.Code
-	}
-	return "unknown"
-}
-
-func reasonMessage(r Reason) string {
-	if data, ok := reasonData[r]; ok {
-		return data.Message
-	}
-	return "Unknown reason"
 }

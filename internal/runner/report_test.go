@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/hex"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -163,5 +164,58 @@ func TestReportExternalAndCommand(t *testing.T) {
 	}
 	if !strings.Contains(out, "argv: cat missing.txt") || !strings.Contains(out, "exit: 1") {
 		t.Errorf("missing argv/exit in command binding output:\n%s", out)
+	}
+}
+
+func TestReportLocatorAndSummary(t *testing.T) {
+	root := filepath.Join(string(filepath.Separator), "tmp", "tree")
+	multi := filepath.Join(root, ".hcr", "MULTI.md")
+	single := filepath.Join(root, ".hcr", "SINGLE.md")
+
+	plan := &hcr.Plan{
+		Root: root,
+		Targets: []hcr.Target{{
+			Kind: "repo",
+			Bindings: []hcr.ExecutableBinding{
+				{RecordPath: multi, BindingIndex: 0, RecordID: "HCR-2001", Summary: "Multi zero summary", Kind: "grep"},
+				{RecordPath: multi, BindingIndex: 1, RecordID: "HCR-2001", Summary: "Multi one summary", Kind: "grep"},
+				{RecordPath: single, BindingIndex: 0, RecordID: "HCR-2002", Summary: "Single summary", Kind: "grep"},
+			},
+		}},
+	}
+	verdicts := []*Verdict{
+		NewCompletedVerdict(&VerdictReport{
+			Identity: BindingIdentity{RecordPath: multi, BindingIndex: 1},
+			Kind:     "grep",
+			Findings: []Finding{{Locus: Locus{File: "x.go"}}},
+		}),
+		NewCompletedVerdict(&VerdictReport{
+			Identity: BindingIdentity{RecordPath: single, BindingIndex: 0},
+			Kind:     "grep",
+		}),
+	}
+
+	var buf bytes.Buffer
+	if err := Render(RenderOptions{Out: &buf, Plan: plan, Verdicts: verdicts}); err != nil {
+		t.Fatalf("Render failed: %v", err)
+	}
+	out := buf.String()
+
+	if strings.Contains(out, root) {
+		t.Errorf("tree root must not prefix any line:\n%s", out)
+	}
+	wantMulti := filepath.Join(".hcr", "MULTI.md") + ":1: violation:"
+	if !strings.Contains(out, wantMulti) {
+		t.Errorf("want %q for a record declaring two bindings:\n%s", wantMulti, out)
+	}
+	wantSingle := filepath.Join(".hcr", "SINGLE.md") + ": pass:"
+	if !strings.Contains(out, wantSingle) {
+		t.Errorf("want %q, a lone binding carries no index:\n%s", wantSingle, out)
+	}
+	if !strings.Contains(out, "Multi one summary") {
+		t.Errorf("a violated binding states its summary:\n%s", out)
+	}
+	if strings.Contains(out, "Single summary") {
+		t.Errorf("a passing binding states no summary:\n%s", out)
 	}
 }
