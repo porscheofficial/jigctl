@@ -4,7 +4,7 @@ title: Go tests must run with race detection and shuffled ordering
 scope: repo
 regulates: reliability
 summary: "The mise test task must invoke go test with -race and -shuffle=on, so shared mutable state and inter-test ordering coupling fail the run."
-state: draft
+state: enforced
 enforced_by:
   - kind: config-assert
     file: "mise.toml"

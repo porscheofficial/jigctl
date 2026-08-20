@@ -4,7 +4,7 @@ title: No Go file may exceed 250 pure lines
 scope: repo
 regulates: maintainability
 summary: "Every Go file must stay at or under 250 pure lines, counting neither blank lines nor comment-only lines."
-state: draft
+state: enforced
 enforced_by:
   - kind: command
     run: ".hcr/checks/check-file-loc.py"

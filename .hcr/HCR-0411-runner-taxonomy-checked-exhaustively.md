@@ -4,7 +4,7 @@ title: Runner outcome taxonomy must be checked exhaustively
 scope: repo
 regulates: architecture-fitness
 summary: "golangci-lint must keep exhaustive enabled with default-signifies-exhaustive false, so every Reason value is named in the switches and maps over it."
-state: draft
+state: enforced
 rationale: ADR-0012
 enforced_by:
   - kind: config-assert

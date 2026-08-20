@@ -4,7 +4,7 @@ title: CI jobs must run with a read-only token
 scope: repo
 regulates: security
 summary: "Every job in .github/workflows/ci.yml must declare permissions with contents read, rather than inheriting the repository default token scope."
-state: draft
+state: enforced
 enforced_by:
   - kind: config-assert
     file: ".github/workflows/ci.yml"

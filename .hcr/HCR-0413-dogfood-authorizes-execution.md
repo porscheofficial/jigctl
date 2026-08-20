@@ -4,7 +4,7 @@ title: jigctl must validate its own records with execution authorized
 scope: repo
 regulates: reliability
 summary: "The mise dogfood task must run jigctl over this repository with --allow-exec, so its own command bindings execute instead of being skipped."
-state: draft
+state: enforced
 rationale: ADR-0012
 enforced_by:
   - kind: config-assert
