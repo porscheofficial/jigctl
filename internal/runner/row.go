@@ -9,10 +9,11 @@ import (
 
 // Row represents the fully evaluated outcome of a single binding, ready for rendering or exit aggregation.
 type Row struct {
-	Identity      BindingIdentity
-	Locator       string
-	RecordID      string
-	Title         string // To be populated when hcr.ExecutableBinding gains Title in Todo 1.
+	Identity BindingIdentity
+	Locator  string
+	RecordID string
+	// Not-in-lookup case yields empty title as there is no executable binding to read from.
+	Title         string
 	Kind          string
 	Severity      string
 	Summary       string
@@ -48,13 +49,7 @@ func locateBinding(plan *hcr.Plan, recordPath string, bindingIndex, bindingsInRe
 
 func deriveProjection(v *Verdict, mutatedFindings []Finding) Projection {
 	if v.Completion() == CompletionCompleted {
-		proj := ProjectionPass
-		for _, f := range mutatedFindings {
-			if len(f.WaivedBy) == 0 {
-				return ProjectionViolation
-			}
-		}
-		return proj
+		return projectionFromFindings(mutatedFindings)
 	}
 	proj, _ := v.Projection()
 	return proj
@@ -130,6 +125,23 @@ func BuildRows(plan *hcr.Plan, verdicts []*Verdict) []Row {
 	return rows
 }
 
+func getLocator(
+	plan *hcr.Plan,
+	rep *VerdictReport,
+	ok bool,
+	perRecord map[string]int,
+) string {
+	if ok {
+		return locateBinding(
+			plan,
+			rep.Identity.RecordPath,
+			rep.Identity.BindingIndex,
+			perRecord[rep.Identity.RecordPath],
+		)
+	}
+	return fmt.Sprintf("%s:%d", relativizePath(plan, rep.Identity.RecordPath), rep.Identity.BindingIndex)
+}
+
 func processVerdict(
 	plan *hcr.Plan,
 	v *Verdict,
@@ -149,26 +161,12 @@ func processVerdict(
 		knownServicePaths,
 	)
 
-	proj := deriveProjection(v, mutatedFindings)
-
-	var locator string
-	if ok {
-		locator = locateBinding(
-			plan,
-			rep.Identity.RecordPath,
-			rep.Identity.BindingIndex,
-			perRecord[rep.Identity.RecordPath],
-		)
-	} else {
-		locator = fmt.Sprintf("%s:%d", relativizePath(plan, rep.Identity.RecordPath), rep.Identity.BindingIndex)
-	}
-
 	row := Row{
 		Identity:   rep.Identity,
-		Locator:    locator,
+		Locator:    getLocator(plan, &rep, ok, perRecord),
 		Kind:       rep.Kind,
 		Severity:   rep.Severity,
-		Projection: proj,
+		Projection: deriveProjection(v, mutatedFindings),
 		Reason:     v.Reason(),
 		Execution:  rep.Execution,
 		Findings:   mutatedFindings,
@@ -180,10 +178,11 @@ func processVerdict(
 		row.Summary = b.Summary
 		row.Tool = b.Tool
 		row.Docs = b.Docs
+		row.Title = b.Title
 	}
 
-	for _, f := range mutatedFindings {
-		if len(f.WaivedBy) == 0 {
+	for i := range mutatedFindings {
+		if len(mutatedFindings[i].WaivedBy) == 0 {
 			row.UnwaivedCount++
 		} else {
 			row.WaivedCount++

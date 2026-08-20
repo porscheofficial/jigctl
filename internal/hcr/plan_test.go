@@ -154,6 +154,62 @@ func TestExecutionPlan_unknown_frontmatter_key_cannot_yield_command(t *testing.T
 	t.Logf("malformed-tree targets=%d diagnostics=%d", len(plan.Targets), len(diagnostics))
 }
 
+func TestExecutionPlan_binding_title_matches_frontmatter_verbatim(t *testing.T) {
+	// Given
+	root := t.TempDir()
+	writePlanFixture(t, root, "service_globs = []\n", map[string]string{
+		".hcr/HCR-9001-colon.md": `---
+id: HCR-9001
+title: "Fix: use go vet, not lint"
+scope: repo
+regulates: reliability
+summary: The command is validated before it can execute.
+state: enforced
+enforced_by:
+  - kind: command
+    severity: blocking
+    cadence: [ci]
+    ref: colon-check
+    run: go vet ./...
+---
+`,
+		".hcr/HCR-9002-nonascii.md": `---
+id: HCR-9002
+title: Vérifie que le café est bien testé
+scope: repo
+regulates: reliability
+summary: The command is validated before it can execute.
+state: enforced
+enforced_by:
+  - kind: command
+    severity: blocking
+    cadence: [ci]
+    ref: nonascii-check
+    run: go vet ./...
+---
+`,
+	})
+
+	// When
+	plan, diagnostics, err := ExecutionPlan(root, planTestDate)
+
+	// Then
+	mustNoError(t, err)
+	if len(diagnostics) != 0 {
+		t.Fatalf("unexpected diagnostics: %#v", diagnostics)
+	}
+	titles := make(map[string]string, 2)
+	for _, binding := range plan.Targets[0].Bindings {
+		titles[binding.RecordID] = binding.Title
+	}
+	if titles["HCR-9001"] != `Fix: use go vet, not lint` {
+		t.Fatalf("colon title mismatch: %#v", titles["HCR-9001"])
+	}
+	if titles["HCR-9002"] != "Vérifie que le café est bien testé" {
+		t.Fatalf("non-ASCII title mismatch: %#v", titles["HCR-9002"])
+	}
+}
+
 func writePlanFixture(t *testing.T, root, config string, records map[string]string) {
 	t.Helper()
 	mustNoError(t, os.WriteFile(filepath.Join(root, "jig.toml"), []byte(config), 0o600))

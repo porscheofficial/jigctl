@@ -215,7 +215,7 @@ func normalizeDuration(s string) string {
 
 func TestPlainDurationOnlyDifference(t *testing.T) {
 	// The original pre-change output
-	originalBytes, err := os.ReadFile("/tmp/jigctl-prechange/run-allowexec.txt")
+	originalBytes, err := os.ReadFile("testdata/prechange-allowexec.txt")
 	if err != nil {
 		t.Fatalf("failed to read original output: %v", err)
 	}

@@ -43,7 +43,7 @@ func compiledSchema() (*jsonschema.Schema, error) {
 }
 
 func schemaDiagnostics(path string, source []byte) ([]Diagnostic, error) {
-	frontmatter, present := extractFrontmatter(source)
+	frontmatter, _, present := extractFrontmatter(source)
 	if !present {
 		return []Diagnostic{{File: path, Code: "schema", Message: "no YAML frontmatter"}}, nil
 	}

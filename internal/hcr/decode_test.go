@@ -28,7 +28,7 @@ enforced_by:
     select: changed
 ---
 `)
-	frontmatter, ok := extractFrontmatter(source)
+	frontmatter, _, ok := extractFrontmatter(source)
 	if !ok {
 		t.Fatal("frontmatter was not extracted")
 	}

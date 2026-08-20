@@ -34,7 +34,7 @@ type ResolvedBinding struct {
 
 // ResolveRecord resolves effective binding values from a record's frontmatter.
 func ResolveRecord(source []byte) ([]ResolvedBinding, error) {
-	frontmatter, present := extractFrontmatter(source)
+	frontmatter, _, present := extractFrontmatter(source)
 	if !present {
 		return nil, fmt.Errorf("resolve record: %w", errResolveFrontmatterAbsent)
 	}

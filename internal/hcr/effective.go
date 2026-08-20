@@ -47,7 +47,7 @@ func DiscoverTreeServices(root string) ([]Service, error) {
 
 	for _, idxRec := range indexed {
 		var id string
-		if fm, present := extractFrontmatter(idxRec.source); present {
+		if fm, _, present := extractFrontmatter(idxRec.source); present {
 			var meta struct {
 				ID string `yaml:"id"`
 			}

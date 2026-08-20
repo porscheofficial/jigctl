@@ -167,7 +167,7 @@ func validateTreeAt(root string, currentDate time.Time) ([]Diagnostic, error) {
 		}
 
 		var meta parsedMeta
-		if fm, present := extractFrontmatter(record.source); present {
+		if fm, _, present := extractFrontmatter(record.source); present {
 			if decodeErr := yaml.Unmarshal(fm, &meta); decodeErr != nil && len(recordDiagnostics) == 0 {
 				return nil, fmt.Errorf("decode schema-valid frontmatter %s: %w", record.path, decodeErr)
 			}

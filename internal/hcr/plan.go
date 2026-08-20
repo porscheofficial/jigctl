@@ -30,6 +30,7 @@ type Exception struct {
 // ExecutableBinding is the validated execution data for one record binding.
 type ExecutableBinding struct {
 	RecordID     string
+	Title        string
 	Summary      string
 	RecordPath   string
 	BindingIndex int
@@ -90,7 +91,7 @@ func ExecutionPlan(root string, currentDate time.Time) (Plan, []Diagnostic, erro
 	}
 	for _, record := range records {
 		var meta parsedMeta
-		frontmatter, _ := extractFrontmatter(record.source)
+		frontmatter, _, _ := extractFrontmatter(record.source)
 		if decodeErr := yaml.Unmarshal(frontmatter, &meta); decodeErr != nil {
 			return Plan{}, nil, fmt.Errorf("decode validated frontmatter %s: %w", record.path, decodeErr)
 		}
@@ -101,7 +102,8 @@ func ExecutionPlan(root string, currentDate time.Time) (Plan, []Diagnostic, erro
 		}
 		for bindingIndex := range meta.EnforcedBy {
 			executable, bindingErr := executableBinding(bindingIdentity{
-				recordID: meta.ID, summary: meta.Summary, recordPath: record.path, bindingIndex: bindingIndex,
+				recordID: meta.ID, title: meta.Title, summary: meta.Summary,
+				recordPath: record.path, bindingIndex: bindingIndex,
 			}, &meta.EnforcedBy[bindingIndex], resolved[bindingIndex], meta.Exceptions)
 			if bindingErr != nil {
 				return Plan{}, nil, bindingErr
@@ -115,6 +117,7 @@ func ExecutionPlan(root string, currentDate time.Time) (Plan, []Diagnostic, erro
 
 type bindingIdentity struct {
 	recordID     string
+	title        string
 	summary      string
 	recordPath   string
 	bindingIndex int
@@ -144,6 +147,7 @@ func executableBinding(
 	}
 	return ExecutableBinding{
 		RecordID:     identity.recordID,
+		Title:        identity.title,
 		Summary:      identity.summary,
 		RecordPath:   identity.recordPath,
 		BindingIndex: identity.bindingIndex,

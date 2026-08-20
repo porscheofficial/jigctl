@@ -208,6 +208,20 @@ func (verdict *Verdict) Report() VerdictReport {
 	return verdict.report
 }
 
+// projectionFromFindings determines if a completed evaluation passed or failed.
+// NOTE: Callers pass different slices to this function. Verdict.Projection() passes
+// the raw findings to answer "what is this verdict on its own terms", whereas
+// deriveProjection (in row.go) passes the post-exception findings to answer
+// "what is this verdict after exceptions were applied".
+func projectionFromFindings(findings []Finding) Projection {
+	for _, finding := range findings {
+		if len(finding.WaivedBy) == 0 {
+			return ProjectionViolation
+		}
+	}
+	return ProjectionPass
+}
+
 // Projection derives the report state. False marks an unset or unknown completion.
 func (verdict *Verdict) Projection() (Projection, bool) {
 	if verdict == nil {
@@ -217,12 +231,7 @@ func (verdict *Verdict) Projection() (Projection, bool) {
 	case CompletionUnset:
 		return ProjectionInvalid, false
 	case CompletionCompleted:
-		for _, finding := range verdict.report.Findings {
-			if len(finding.WaivedBy) == 0 {
-				return ProjectionViolation, true
-			}
-		}
-		return ProjectionPass, true
+		return projectionFromFindings(verdict.report.Findings), true
 	case CompletionBlocked:
 		return ProjectionBlockedUnchecked, true
 	case CompletionNotAttempted:

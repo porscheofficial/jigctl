@@ -1,0 +1,11 @@
+.hcr/HCR-0401-schema-metaschema-valid.md: pass: [HCR-0401] (argv: mise run metaschema, exit: 0, duration: 386.055917ms)
+.hcr/HCR-0402-corpus-gates-every-change.md: pass: [HCR-0402] (argv: mise run corpus, exit: 0, duration: 2.025092375s)
+.hcr/HCR-0403-schema-shape-matches-register.md: pass: [HCR-0403] (argv: tools/schema-shape.py, exit: 0, duration: 159.345667ms)
+.hcr/HCR-0404-go-source-passes-gates.md: pass: [HCR-0404] (argv: mise run lint, exit: 0, duration: 2.618624541s)
+.hcr/HCR-0405-mise-owns-every-entrypoint.md: pass: [HCR-0405]
+.hcr/HCR-0406-single-hcr-implementation.md: pass: [HCR-0406]
+.hcr/HCR-0407-fixtures-never-edited-to-pass.md: kind-not-executable: [HCR-0407] Kind cannot execute
+.hcr/HCR-0408-real-record-ids-stay-in-band.md: pass: [HCR-0408] (argv: tools/check-record-ids.py, exit: 0, duration: 107.615917ms)
+.hcr/HCR-0409-adr-rationale-prefix-is-mapped.md: pass: [HCR-0409]
+.hcr/HCR-0410-invocation-clock-is-not-swappable.md: pass: [HCR-0410]
+no findings, 1 expected-unchecked, 0 blocked-unchecked

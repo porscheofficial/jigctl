@@ -158,15 +158,14 @@ func tcsVerdicts(tcs []struct {
 	return v
 }
 
-func TestLocator(t *testing.T) {
+func TestTitle(t *testing.T) {
 	plan := &hcr.Plan{
 		Root: "/base",
 		Targets: []hcr.Target{
 			{
 				Bindings: []hcr.ExecutableBinding{
-					{RecordPath: "/base/single.md", BindingIndex: 0},
-					{RecordPath: "/base/multi.md", BindingIndex: 0},
-					{RecordPath: "/base/multi.md", BindingIndex: 1},
+					{RecordPath: "/base/normal.md", BindingIndex: 0, Title: "normal title"},
+					{RecordPath: "/base/colon.md", BindingIndex: 0, Title: "title: with a colon"},
 				},
 			},
 		},
@@ -174,13 +173,10 @@ func TestLocator(t *testing.T) {
 
 	verdicts := []*Verdict{
 		NewCompletedVerdict(&VerdictReport{
-			Identity: BindingIdentity{RecordPath: "/base/single.md", BindingIndex: 0},
+			Identity: BindingIdentity{RecordPath: "/base/normal.md", BindingIndex: 0},
 		}),
 		NewCompletedVerdict(&VerdictReport{
-			Identity: BindingIdentity{RecordPath: "/base/multi.md", BindingIndex: 0},
-		}),
-		NewCompletedVerdict(&VerdictReport{
-			Identity: BindingIdentity{RecordPath: "/base/multi.md", BindingIndex: 1},
+			Identity: BindingIdentity{RecordPath: "/base/colon.md", BindingIndex: 0},
 		}),
 		NewCompletedVerdict(&VerdictReport{
 			Identity: BindingIdentity{RecordPath: "/base/missing.md", BindingIndex: 0},
@@ -189,26 +185,20 @@ func TestLocator(t *testing.T) {
 
 	rows := BuildRows(plan, verdicts)
 
-	if len(rows) != 4 {
-		t.Fatalf("expected 4 rows, got %d", len(rows))
+	if len(rows) != 3 {
+		t.Fatalf("expected 3 rows, got %d", len(rows))
 	}
 
-	// single.md: single binding -> locator is just the relative path
-	if rows[0].Locator != "single.md" {
-		t.Errorf("expected single.md, got %q", rows[0].Locator)
+	if rows[0].Title != "normal title" {
+		t.Errorf("expected normal title, got %q", rows[0].Title)
 	}
 
-	// multi.md: multiple bindings -> locator has index
-	if rows[1].Locator != "multi.md:0" {
-		t.Errorf("expected multi.md:0, got %q", rows[1].Locator)
-	}
-	if rows[2].Locator != "multi.md:1" {
-		t.Errorf("expected multi.md:1, got %q", rows[2].Locator)
+	if rows[1].Title != "title: with a colon" {
+		t.Errorf("expected title: with a colon, got %q", rows[1].Title)
 	}
 
-	// missing.md: not in plan lookup -> locator unconditionally has index
-	if rows[3].Locator != "missing.md:0" {
-		t.Errorf("expected missing.md:0, got %q", rows[3].Locator)
+	if rows[2].Title != "" {
+		t.Errorf("expected empty title for not-in-lookup, got %q", rows[2].Title)
 	}
 }
 
