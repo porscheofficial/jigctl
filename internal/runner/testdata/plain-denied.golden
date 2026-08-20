@@ -1,0 +1,11 @@
+.hcr/HCR-0401-schema-metaschema-valid.md: authorization-denied: [HCR-0401] Execution authorization is absent
+.hcr/HCR-0402-corpus-gates-every-change.md: authorization-denied: [HCR-0402] Execution authorization is absent
+.hcr/HCR-0403-schema-shape-matches-register.md: authorization-denied: [HCR-0403] Execution authorization is absent
+.hcr/HCR-0404-go-source-passes-gates.md: authorization-denied: [HCR-0404] Execution authorization is absent
+.hcr/HCR-0405-mise-owns-every-entrypoint.md: pass: [HCR-0405]
+.hcr/HCR-0406-single-hcr-implementation.md: pass: [HCR-0406]
+.hcr/HCR-0407-fixtures-never-edited-to-pass.md: kind-not-executable: [HCR-0407] Kind cannot execute
+.hcr/HCR-0408-real-record-ids-stay-in-band.md: authorization-denied: [HCR-0408] Execution authorization is absent
+.hcr/HCR-0409-adr-rationale-prefix-is-mapped.md: pass: [HCR-0409]
+.hcr/HCR-0410-invocation-clock-is-not-swappable.md: pass: [HCR-0410]
+no findings, 1 expected-unchecked, 5 blocked-unchecked

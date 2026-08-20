@@ -9,11 +9,14 @@ import (
 	"github.com/patricebouillet/jigctl/internal/hcr"
 	"github.com/patricebouillet/jigctl/internal/runner"
 	"github.com/spf13/cobra"
+	"golang.org/x/term"
 )
 
 var (
 	runAllowExec bool
 	runStrict    bool
+	runPlain     bool
+	runNoColor   bool
 )
 
 var runCmd = &cobra.Command{
@@ -73,77 +76,34 @@ var runCmd = &cobra.Command{
 		authorized := runAllowExec || os.Getenv("JIGCTL_ALLOW_EXEC") == "1"
 
 		verdicts := runner.EvaluatePlan(plan, authorized)
+		rows := runner.BuildRows(&plan, verdicts)
 
-		renderOpts := runner.RenderOptions{
-			Out:               os.Stdout,
-			Plan:              &plan,
-			Verdicts:          verdicts,
-			NormalizeDuration: false,
+		enableColor := shouldEnableColor(colorDecisionInputs{
+			IsTerminal:  term.IsTerminal(int(os.Stdout.Fd())),
+			FlagNoColor: runNoColor,
+			FlagPlain:   runPlain,
+			LookupEnv:   os.LookupEnv,
+		})
+
+		var renderErr error
+		if runPlain {
+			renderErr = runner.RenderPlain(os.Stdout, rows)
+		} else {
+			renderOpts := runner.RenderOptions{
+				Out:               os.Stdout,
+				Plan:              &plan,
+				Verdicts:          verdicts,
+				NormalizeDuration: false,
+				Style:             runner.Style{Colour: enableColor},
+			}
+			renderErr = runner.Render(renderOpts)
 		}
-		if renderErr := runner.Render(renderOpts); renderErr != nil {
+
+		if renderErr != nil {
 			return fmt.Errorf("render output: %w", renderErr)
 		}
 
-		lookupExceptions := make(map[runner.BindingIdentity][]string)
-		var knownServicePaths []string
-
-		for i := range plan.Targets {
-			t := &plan.Targets[i]
-			if t.Kind == "service" {
-				knownServicePaths = append(knownServicePaths, t.Path)
-			}
-			for j := range t.Bindings {
-				b := &t.Bindings[j]
-				id := runner.BindingIdentity{RecordPath: b.RecordPath, BindingIndex: b.BindingIndex}
-
-				var exceptions []string
-				for _, exc := range b.Exceptions {
-					exceptions = append(exceptions, exc.Scope)
-				}
-				lookupExceptions[id] = exceptions
-			}
-		}
-
-		var summaries []runner.ExitSummary
-		for _, v := range verdicts {
-			if v == nil {
-				continue
-			}
-
-			rep := v.Report()
-			exceptions := lookupExceptions[rep.Identity]
-
-			var mutatedFindings []runner.Finding
-			for _, f := range rep.Findings {
-				mut, applyErr := runner.ApplyExceptions(
-					f, rep.Kind, exceptions, rep.Identity.RecordPath, knownServicePaths)
-				if applyErr == nil {
-					mutatedFindings = append(mutatedFindings, mut)
-				} else {
-					mutatedFindings = append(mutatedFindings, f)
-				}
-			}
-
-			var proj runner.Projection
-			if v.Completion() == runner.CompletionCompleted {
-				proj = runner.ProjectionPass
-				for _, f := range mutatedFindings {
-					if len(f.WaivedBy) == 0 {
-						proj = runner.ProjectionViolation
-						break
-					}
-				}
-			} else {
-				proj, _ = v.Projection()
-			}
-
-			summaries = append(summaries, runner.ExitSummary{
-				Projection: proj,
-				IsBlocking: rep.Severity != "advisory",
-			})
-		}
-
-		recordedExitCode = runner.AggregateExitCode(summaries, runStrict)
+		recordedExitCode = runner.AggregateExitCode(runner.ExitSummaries(rows), runStrict)
 		return nil
 	},
 }
@@ -151,5 +111,7 @@ var runCmd = &cobra.Command{
 func init() {
 	runCmd.Flags().BoolVar(&runAllowExec, "allow-exec", false, "Authorize execution of command bindings")
 	runCmd.Flags().BoolVar(&runStrict, "strict", false, "Promote expected-unchecked bindings to failure")
+	runCmd.Flags().BoolVar(&runPlain, "plain", false, "Render plain one-line-per-record output")
+	runCmd.Flags().BoolVar(&runNoColor, "no-color", false, "Disable color output")
 	rootCmd.AddCommand(runCmd)
 }
