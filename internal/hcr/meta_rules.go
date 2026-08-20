@@ -77,7 +77,8 @@ func jigctlSlug(heading string) string {
 func applyR110(canonicalRoot string, emitters []emitterRecord, diagnostics *[]Diagnostic) {
 	for emitterIndex := range emitters {
 		e := &emitters[emitterIndex]
-		for i, binding := range e.meta.EnforcedBy {
+		for i := range e.meta.EnforcedBy {
+			binding := &e.meta.EnforcedBy[i]
 			if binding.Kind != "external" || binding.Docs == "" {
 				continue
 			}

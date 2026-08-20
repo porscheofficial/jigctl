@@ -16,18 +16,32 @@ type parsedBinding struct {
 	// If Ref were a string, a record with a non-string ref would fail decoding
 	// completely, its id would be lost from identityIndex, and a valid supersedes
 	// pointing to it would get a false R-102. It is safely type-asserted where used.
-	Ref  interface{} `yaml:"ref"`
-	Run  string      `yaml:"run"`
-	Docs string      `yaml:"docs"`
+	Ref interface{} `yaml:"ref"`
+
+	Run         string      `yaml:"run"`
+	Docs        string      `yaml:"docs"`
+	File        string      `yaml:"file"`
+	Path        string      `yaml:"path"`
+	Op          string      `yaml:"op"`
+	Value       interface{} `yaml:"value"`
+	Require     []string    `yaml:"require"`
+	Forbid      []string    `yaml:"forbid"`
+	TimeoutSecs int         `yaml:"timeout_secs"`
+	Tool        string      `yaml:"tool"`
+	Pattern     string      `yaml:"pattern"`
+	Select      string      `yaml:"select"`
 }
 
 type parsedException struct {
+	Scope string `yaml:"scope"`
 	Until string `yaml:"until"`
 }
 
 // parsedMeta holds fields needed for META rules.
 type parsedMeta struct {
 	ID         string            `yaml:"id"`
+	Title      string            `yaml:"title"`
+	Summary    string            `yaml:"summary"`
 	State      string            `yaml:"state"`
 	Supersedes string            `yaml:"supersedes"`
 	Rationale  string            `yaml:"rationale"`

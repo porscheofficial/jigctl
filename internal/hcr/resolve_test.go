@@ -76,12 +76,12 @@ func TestResolveBindings_injects_each_kind_default(t *testing.T) {
 		kind string
 		want ResolvedBinding
 	}{
-		{"command", "command", ResolvedBinding{Kind: "command", Severity: "blocking", Cadence: []string{"on-change", "ci"}}},
-		{"config-assert", "config-assert", ResolvedBinding{Kind: "config-assert", Severity: "blocking", Cadence: []string{"on-change", "ci"}}},
-		{"grep", "grep", ResolvedBinding{Kind: "grep", Severity: "blocking", Cadence: []string{"on-change", "ci"}}},
-		{"external", "external", ResolvedBinding{Kind: "external", Severity: "blocking", Cadence: []string{"on-change", "ci"}}},
-		{"agent-review", "agent-review", ResolvedBinding{Kind: "agent-review", Severity: "advisory", Cadence: []string{"scheduled"}}},
-		{"inferential has no cadence default", "inferential", ResolvedBinding{Kind: "inferential", Severity: "advisory"}},
+		{"command", "command", ResolvedBinding{Kind: "command", State: "active", Severity: "blocking", Cadence: []string{"on-change", "ci"}}},
+		{"config-assert", "config-assert", ResolvedBinding{Kind: "config-assert", State: "active", Severity: "blocking", Cadence: []string{"on-change", "ci"}}},
+		{"grep", "grep", ResolvedBinding{Kind: "grep", State: "active", Severity: "blocking", Cadence: []string{"on-change", "ci"}}},
+		{"external", "external", ResolvedBinding{Kind: "external", State: "active", Severity: "blocking", Cadence: []string{"on-change", "ci"}}},
+		{"agent-review", "agent-review", ResolvedBinding{Kind: "agent-review", State: "active", Severity: "advisory", Cadence: []string{"scheduled"}}},
+		{"inferential has no cadence default", "inferential", ResolvedBinding{Kind: "inferential", State: "active", Severity: "advisory"}},
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
@@ -104,7 +104,7 @@ func TestResolveBindings_preserves_explicit_values_when_not_warn(t *testing.T) {
 	got := resolveBindings("active", bindings)
 
 	// Then
-	want := []ResolvedBinding{{Kind: "command", Severity: "advisory", Cadence: []string{"production"}}}
+	want := []ResolvedBinding{{Kind: "command", State: "active", Severity: "advisory", Cadence: []string{"production"}}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("resolveBindings() = %v, want %v", got, want)
 	}
@@ -118,7 +118,7 @@ func TestResolveBindings_warn_overrides_explicit_blocking_and_preserves_cadence(
 	got := resolveBindings("warn", bindings)
 
 	// Then
-	want := []ResolvedBinding{{Kind: "command", Severity: "advisory", Cadence: []string{"production"}}}
+	want := []ResolvedBinding{{Kind: "command", State: "warn", Severity: "advisory", Cadence: []string{"production"}}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("resolveBindings() = %v, want %v", got, want)
 	}
@@ -132,7 +132,7 @@ func TestResolveBindings_unknown_kind_preserves_declared_values(t *testing.T) {
 	got := resolveBindings("active", bindings)
 
 	// Then
-	want := []ResolvedBinding{{Kind: "future", Severity: "custom", Cadence: []string{"manual"}}}
+	want := []ResolvedBinding{{Kind: "future", State: "active", Severity: "custom", Cadence: []string{"manual"}}}
 	if !reflect.DeepEqual(got, want) {
 		t.Errorf("resolveBindings() = %v, want %v", got, want)
 	}

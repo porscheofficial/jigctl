@@ -115,7 +115,8 @@ func applyR103AndR104(canonicalRoot string, emitters []emitterRecord, diagnostic
 
 	for emitterIndex := range emitters {
 		e := &emitters[emitterIndex]
-		for i, binding := range e.meta.EnforcedBy {
+		for i := range e.meta.EnforcedBy {
+			binding := &e.meta.EnforcedBy[i]
 			if refStr, ok := binding.Ref.(string); ok && refStr != "" {
 				refs[refStr] = append(refs[refStr], bindingRef{
 					file:         e.path,
@@ -126,7 +127,7 @@ func applyR103AndR104(canonicalRoot string, emitters []emitterRecord, diagnostic
 				})
 			}
 			if binding.Run != "" {
-				applyR104(canonicalRoot, e, i, &binding, diagnostics)
+				applyR104(canonicalRoot, e, i, binding, diagnostics)
 			}
 		}
 	}

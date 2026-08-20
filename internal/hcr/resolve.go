@@ -27,6 +27,7 @@ var kindDefaults = map[string]bindingDefault{
 // ResolvedBinding is the effective severity and cadence after kind-tier defaults and the warn downgrade.
 type ResolvedBinding struct {
 	Kind     string
+	State    string
 	Severity string
 	Cadence  []string
 }
@@ -65,7 +66,12 @@ func resolveBindings(state string, bindings []parsedBinding) []ResolvedBinding {
 			severity = "advisory"
 		}
 		// Unknown kinds arise only after schema failure; preserve their declared values.
-		resolved = append(resolved, ResolvedBinding{Kind: binding.Kind, Severity: severity, Cadence: cadence})
+		resolved = append(resolved, ResolvedBinding{
+			Kind:     binding.Kind,
+			State:    state,
+			Severity: severity,
+			Cadence:  cadence,
+		})
 	}
 	return resolved
 }

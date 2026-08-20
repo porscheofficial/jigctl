@@ -133,7 +133,10 @@ func indexTree(root string) ([]indexedRecord, error) {
 // ValidateTree validates each directly indexed record once. Wave 4 extends
 // this indexed layer with META rules while preserving this operational contract.
 func ValidateTree(root string) ([]Diagnostic, error) {
-	currentDate := utcDateOf(time.Now())
+	return validateTreeAt(root, utcDateOf(time.Now()))
+}
+
+func validateTreeAt(root string, currentDate time.Time) ([]Diagnostic, error) {
 	canonicalRoot, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
 		return nil, fmt.Errorf("canonicalize tree root %s: %w", root, err)
@@ -165,7 +168,9 @@ func ValidateTree(root string) ([]Diagnostic, error) {
 
 		var meta parsedMeta
 		if fm, present := extractFrontmatter(record.source); present {
-			_ = yaml.Unmarshal(fm, &meta) //nolint:errcheck // schema layer already validates well-formedness
+			if decodeErr := yaml.Unmarshal(fm, &meta); decodeErr != nil && len(recordDiagnostics) == 0 {
+				return nil, fmt.Errorf("decode schema-valid frontmatter %s: %w", record.path, decodeErr)
+			}
 		}
 
 		if idPattern.MatchString(meta.ID) {
@@ -184,7 +189,7 @@ func ValidateTree(root string) ([]Diagnostic, error) {
 
 	applyMetaRules(metaRuleContext{
 		canonicalRoot: canonicalRoot, rationaleMapping: config.Rationale,
-		identityIndex: identityIndex, currentDate: currentDate,
+		identityIndex: identityIndex, currentDate: utcDateOf(currentDate),
 	}, emitters, &diagnostics)
 	sortDiagnostics(diagnostics)
 	return diagnostics, nil
