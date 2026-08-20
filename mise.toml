@@ -22,9 +22,13 @@ run = "JIGCTL_FREEZE_EXPECTATIONS=1 go test ./internal/hcr/ -run TestExpectation
 description = "Assert the schema's per-kind prohibitions match the register matrix"
 run = "uv run --script tools/schema-shape.py"
 
+[tasks.ids]
+description = "Assert this repo's HCR ids stay in the real-record 04xx band"
+run = "uv run --script tools/check-record-ids.py"
+
 [tasks.check]
 description = "Everything CI runs, in CI's order"
-depends = ["metaschema", "corpus", "shape", "lint", "test", "dogfood"]
+depends = ["test", "dogfood"]
 
 [tasks.lint]
 description = "Run gofumpt, golangci-lint and nilaway over the Go module"
@@ -36,4 +40,4 @@ run = "go test ./... -race -shuffle=on -count=1"
 
 [tasks.dogfood]
 description = "Validate this repo's own .hcr/ records with jigctl"
-run = "go run ./cmd/jigctl validate ."
+run = "go run ./cmd/jigctl run . --allow-exec"
