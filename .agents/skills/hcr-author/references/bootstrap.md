@@ -55,9 +55,20 @@ Then create `.hcr/` at the root. Create a service's `.hcr/` only when you are
 actually writing a service-scoped record into it — a glob match without a
 `.hcr/` directory is simply skipped, so empty ones add nothing.
 
+A check that a record binds by path belongs in `.hcr/checks/`, beside the
+records that invoke it. Discovery globs `<root>/.hcr/*.md` and never descends,
+so the subdirectory is invisible to jigctl — which cuts the other way too: a
+record file nested anywhere below `.hcr/` is silently not a record, and is
+worth a check of its own.
+
 A service's effective rule set is the **union** of repo-scoped and
 service-scoped records. Service records add constraints; they never relax or
 override a repo record. Mention this if the user asks how the two interact.
+
+The third piece of scaffolding is the `## Constraint Records` section of
+[agents-section.md](agents-section.md), which Step 4 of `SKILL.md` writes into
+the root `AGENTS.md`. A `.hcr/` directory nobody is told to maintain collects
+exactly the records that were there the day it was created.
 
 ## 4. Propose the first five
 
@@ -82,6 +93,7 @@ strongest evidence — an actual config file, an actual task, an actual CI step.
 | a `LICENSE` and third-party deps | dependencies stay within the licence allowlist | `compliance` | `external` |
 | documented layering or ownership rules | the documented layering holds | `architecture-fitness` | `inferential`, until a check exists |
 | a coverage threshold | coverage stays at or above the configured threshold | `reliability` | `config-assert` → the threshold |
+| an `AGENTS.md` (any repo adopting this skill) | AGENTS.md carries the constraint-records section | `architecture-fitness` | `grep` → `AGENTS.md` must contain `## Constraint Records` |
 
 Two rules for picking:
 
@@ -96,7 +108,7 @@ Use the card format from `SKILL.md`, emit exactly five, then stop and wait.
 
 ## 5. Author and validate
 
-Return to Steps 3 and 4 of `SKILL.md`. Every new record is `state: draft`,
+Return to Steps 3 to 5 of `SKILL.md`. Every new record is `state: draft`,
 including these — draft is what lets the user watch a rule's impact before it
 gates anyone.
 

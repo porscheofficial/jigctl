@@ -17,7 +17,8 @@ missing, and writes the ones the user approves.
 | 1 | [Discover](#step-1--discover) the authoritative record set | existing records, or none |
 | 2 | [Propose](#step-2--propose-exactly-five) exactly five candidates | five cards, then **HARD STOP** |
 | 3 | [Author](#step-3--author-the-approved-records) only what was approved | files in `.hcr/` |
-| 4 | [Validate](#step-4--validate) | a green tree |
+| 4 | [Record the practice](#step-4--record-the-practice-in-agentsmd) in `AGENTS.md` | a section agents read before changing anything |
+| 5 | [Validate](#step-5--validate) | a green tree |
 
 Step 2 ends the turn. Authoring a record the user has not picked is a failure of
 this skill, not a shortcut.
@@ -106,6 +107,10 @@ implementation detail.
 - Pick `regulates` with the discriminator questions in
   [references/record-format.md](references/record-format.md), not by vibe. It is
   the field reviewers argue about.
+- One candidate may be the `AGENTS.md` section Step 4 writes: `kind: grep`,
+  `file: AGENTS.md`, `require: ["## Constraint Records"]`. Offer it as a card
+  like any other, author it only if the user picks it, and write the section at
+  Step 4 either way.
 
 Then stop and wait. The user will accept, reject or refine.
 
@@ -144,7 +149,31 @@ Identity, filename and location:
 - **location** must agree with scope: `repo` → `<root>/.hcr/`, `service` →
   `<service>/.hcr/`.
 
-## Step 4 — Validate
+## Step 4 — Record the practice in AGENTS.md
+
+Records get written only where writing them is documented, and agents read
+`AGENTS.md` before they read anything else. Copy the section from
+[references/agents-section.md](references/agents-section.md) into the repo's
+root `AGENTS.md`, replacing the placeholder intro with one or two sentences
+about this repo. Reproduce the heading and every bullet verbatim; append a
+sentence to a bullet where the repo has something local to add, but do not
+reword what is there.
+
+- **Place it after the repo's own invariants**, ahead of any language- or
+  build-specific section. It leans on whatever the file already says about
+  layout and review.
+- **Do not restate what the file already covers.** Where AGENTS.md already
+  fixes the id band, the filename rule or the command that gates a change, the
+  section leaves that to it.
+- **Write the section whether or not a record covers it.** The grep record
+  offered at Step 2 is the check; the section is the practice, and the practice
+  is the deliverable.
+
+If the repo keeps contributor guidance somewhere else — `CONTRIBUTING.md`, a
+nested `AGENTS.md`, a docs page agents are pointed at — write it there instead,
+and say which file you chose and why.
+
+## Step 5 — Validate
 
 Run `jigctl validate <root>`, then the repo's own gate if it has one
 (`mise run check`, `make check`, `npm run check`). Report the result honestly,

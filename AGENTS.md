@@ -32,6 +32,41 @@ repo), not for agents consuming HCRs in some other repo.
 - Run `mise run check` before proposing any change
   and again before merging.
 
+## Constraint Records
+
+This repo is jigctl's first consumer: `.hcr/` is our own harness and the
+only place the tool runs against rules somebody actually has to live with.
+Keeping it current is part of the change, not follow-up work.
+
+- Read the records frontmatter-first. Every `.hcr/*.md` opens with a YAML
+  block carrying `title`, `scope`, `regulates`, `summary` and `state` —
+  that block is the index. Scan every record's frontmatter, then open only
+  the bodies that bear on the change in front of you; `summary` is capped
+  at 25 words so the scan stays cheap. Where a record binds a `command`,
+  its `run` is what decides the rule — run it rather than reasoning about
+  whether the code complies.
+- A change that introduces a constraint carries its record in the same
+  commit. If a contributor could violate the new rule without noticing, it
+  needs a record — a rule that lives only in a review comment, or only in
+  this file, is enforced by nobody.
+- A change that invalidates a record updates that record in the same
+  commit. Renaming a task, moving a package or dropping a check moves the
+  binding target with it, and a record pointing at something that no longer
+  exists is worse than no record at all.
+- Not every preference is a record. Two questions decide it: does it get
+  violated in *this* repo, and can you name the concrete thing a check
+  would bind to. Whatever fails either is a style note and belongs in this
+  file instead.
+- A new record is `state: draft`. Draft is how a rule's impact is measured
+  before it gates anyone; promoting it to `warn` or `enforced` is a
+  separate, deliberate change.
+- Author records with the `hcr-author` skill rather than copying an
+  existing one by hand — it owns the field limits, the `regulates`
+  discriminators and the id and filename rules. When a record and the
+  tooling disagree, fix the record: never the check it binds to. The skill
+  is vendored here at `.agents/skills/hcr-author/`, and the canonical text
+  of this section is its `references/agents-section.md`.
+
 ## Go Implementation
 
 - Strict 250 pure-LOC per-file ceiling across the codebase.
