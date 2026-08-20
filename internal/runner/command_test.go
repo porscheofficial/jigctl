@@ -254,7 +254,7 @@ func testCommandBindingCwdProof(t *testing.T) {
 			BindingIndex: 0,
 			Kind:         "repo",
 			Severity:     "HIGH",
-			Run:          "python3 tools/check-record-ids.py",
+			Run:          "python3 .hcr/checks/check-record-ids.py",
 			TimeoutSecs:  2,
 		}
 		target := TargetProvenance{Name: "repo", Path: ""}

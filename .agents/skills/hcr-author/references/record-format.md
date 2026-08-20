@@ -118,8 +118,8 @@ whitespace-separated token of `run` is inspected. If that token contains a `/`,
 it is resolved against the tree root and must exist. So:
 
 - `mise run lint` — skipped, first token has no `/`
-- `uv run --script tools/check.py` — skipped, first token is `uv`
-- `tools/check.py` — **checked**, the file must exist
+- `uv run --script .hcr/checks/check.py` — skipped, first token is `uv`
+- `.hcr/checks/check.py` — **checked**, the file must exist
 
 This is what makes it safe to author a draft record binding to a task-runner
 target that has not been written yet, while a bare script path must be real.

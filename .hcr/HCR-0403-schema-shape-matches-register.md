@@ -7,9 +7,9 @@ summary: "The per-kind prohibition sets in schema/hcr.schema.json must match the
 state: enforced
 enforced_by:
   - kind: command
-    run: "tools/schema-shape.py"
+    run: ".hcr/checks/schema-shape.py"
 ---
-Run `tools/schema-shape.py` directly any time you add a kind, add a
+Run `.hcr/checks/schema-shape.py` directly any time you add a kind, add a
 field, or edit a per-kind prohibition in schema/hcr.schema.json or
 corpus/RULES.md. This record's `run` is deliberately a bare path rather
 than an indirect `uv run --script` invocation, so it doubles as proof
