@@ -5,14 +5,14 @@ import (
 	"strings"
 )
 
-func renderDetail(opts RenderOptions, r *Row) {
+func renderDetail(opts RenderOptions, layout Layout, r *Row) {
 	glyph := opts.Style.Colorize(r.Projection, Glyph(r.Projection))
 	id := r.RecordID
 	if id == "" {
 		id = "--------"
 	}
 
-	titleLines := wrapText(r.Title)
+	titleLines := wrapText(r.Title, layout.Heading)
 	if len(titleLines) == 0 {
 		fmt.Fprintf(opts.Out, "  %s  %-8s  \n", glyph, id)
 	} else {
@@ -25,7 +25,7 @@ func renderDetail(opts RenderOptions, r *Row) {
 		}
 	}
 
-	renderDetailSummary(opts, r)
+	renderDetailSummary(opts, layout, r)
 
 	for _, f := range r.Findings {
 		if len(f.WaivedBy) > 0 {
@@ -39,15 +39,15 @@ func renderDetail(opts RenderOptions, r *Row) {
 	}
 }
 
-func renderDetailSummary(opts RenderOptions, r *Row) {
+func renderDetailSummary(opts RenderOptions, layout Layout, r *Row) {
 	// First, if it's non-passing, print the reason
 	if r.IsUnknown {
-		wrappedLines := wrapText("[unknown] " + reasonMessage(r.Reason))
+		wrappedLines := wrapText("[unknown] "+reasonMessage(r.Reason), layout.Prose)
 		for _, line := range wrappedLines {
 			fmt.Fprintf(opts.Out, "       %s\n", line)
 		}
 	} else if r.Reason != 0 && r.Projection != ProjectionViolation && r.Projection != ProjectionPass {
-		wrappedLines := wrapText(reasonMessage(r.Reason))
+		wrappedLines := wrapText(reasonMessage(r.Reason), layout.Prose)
 		for _, line := range wrappedLines {
 			fmt.Fprintf(opts.Out, "       %s\n", line)
 		}
@@ -57,7 +57,7 @@ func renderDetailSummary(opts RenderOptions, r *Row) {
 	if r.Summary != "" {
 		lines := strings.Split(strings.TrimSpace(r.Summary), "\n")
 		for _, rawLine := range lines {
-			wrappedLines := wrapText(rawLine)
+			wrappedLines := wrapText(rawLine, layout.Prose)
 			for _, line := range wrappedLines {
 				fmt.Fprintf(opts.Out, "       %s\n", line)
 			}

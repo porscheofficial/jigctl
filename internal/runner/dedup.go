@@ -13,9 +13,10 @@ type bindingCtx struct {
 	originalIdx int
 }
 
-// EvaluatePlan evaluates all executable bindings in a plan, deduplicating
-// executions for bindings that share a non-empty Ref.
-func EvaluatePlan(plan hcr.Plan, authorized bool) []*Verdict {
+// EvaluatePlanWithProgress evaluates all executable bindings in a plan,
+// deduplicating executions for bindings that share a non-empty Ref, and
+// reports each group's start and settlement to p. A nil p evaluates silently.
+func EvaluatePlanWithProgress(plan hcr.Plan, authorized bool, p Progress) []*Verdict {
 	all := make([]bindingCtx, 0)
 	idx := 0
 	for _, t := range plan.Targets {
@@ -37,7 +38,9 @@ func EvaluatePlan(plan hcr.Plan, authorized bool) []*Verdict {
 	allGroups := groupBindings(all)
 
 	for _, groupIdxs := range allGroups {
+		notifyStart(p, all, groupIdxs)
 		evaluateGroup(plan, authorized, all, groupIdxs, verdicts)
+		notifyDone(p, all, groupIdxs, verdicts)
 	}
 
 	return verdicts

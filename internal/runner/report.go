@@ -7,24 +7,26 @@ import (
 	"unicode/utf8"
 )
 
+// RenderOptions carries everything Render needs to print one run.
 type RenderOptions struct {
-	Out               io.Writer
-	Rows              []Row
+	Out  io.Writer
+	Rows []Row
+	// NormalizeDuration replaces every measured duration with a fixed
+	// placeholder so a rendering can be hashed for determinism.
 	NormalizeDuration bool
-	Style             Style
+	// Width is the destination's rune width, or zero when it has none.
+	// Terminal detection belongs to cmd/jigctl (ADR-0013); this package is
+	// only ever told the answer.
+	Width int
+	Style Style
 }
 
+// Render prints the human-facing shape of a run: a legend when the run needs
+// one, one scan-list line per binding, and a detail block repeating every
+// binding that did not pass.
 func Render(opts RenderOptions) error {
-	rows := make([]Row, len(opts.Rows))
-	copy(rows, opts.Rows)
-
-	// Sort rows
-	sort.Slice(rows, func(i, j int) bool {
-		if rows[i].Identity.RecordPath != rows[j].Identity.RecordPath {
-			return rows[i].Identity.RecordPath < rows[j].Identity.RecordPath
-		}
-		return rows[i].Identity.BindingIndex < rows[j].Identity.BindingIndex
-	})
+	rows := sortRows(opts.Rows)
+	layout := ComputeLayout(opts.Width, rows)
 
 	var nonPassing []*Row
 	projections := make([]Projection, 0, len(rows))
@@ -36,7 +38,6 @@ func Render(opts RenderOptions) error {
 		}
 	}
 
-	// 1. Legend (if non-passing exists)
 	if len(nonPassing) > 0 {
 		legend := LegendLines(projections)
 		for _, l := range legend {
@@ -47,36 +48,56 @@ func Render(opts RenderOptions) error {
 		}
 	}
 
-	// 2. Scan list
 	for i := range rows {
-		renderScanLine(opts, &rows[i])
+		renderScanLine(opts, layout, &rows[i])
 	}
 
-	// 3. Detail block
 	if len(nonPassing) > 0 {
 		fmt.Fprintln(opts.Out)
 		for i, r := range nonPassing {
 			if i > 0 {
 				fmt.Fprintln(opts.Out)
 			}
-			renderDetail(opts, r)
+			renderDetail(opts, layout, r)
 		}
 	}
-
-	// 4. Ledger
-	fmt.Fprintln(opts.Out)
-	renderLedger(opts.Out, rows)
 
 	return nil
 }
 
-// truncate to fixed runes.
+// sortRows returns a copy of rows in the order a run is always printed in:
+// by record path, then by binding index within a record.
+func sortRows(in []Row) []Row {
+	rows := make([]Row, len(in))
+	copy(rows, in)
+	sort.Slice(rows, func(i, j int) bool {
+		if rows[i].Identity.RecordPath != rows[j].Identity.RecordPath {
+			return rows[i].Identity.RecordPath < rows[j].Identity.RecordPath
+		}
+		return rows[i].Identity.BindingIndex < rows[j].Identity.BindingIndex
+	})
+	return rows
+}
+
+// truncate bounds s to maxRunes, marking the cut with an ellipsis.
 func truncate(s string, maxRunes int) string {
+	if maxRunes <= 0 {
+		return ""
+	}
 	if utf8.RuneCountInString(s) <= maxRunes {
 		return s
 	}
 	runes := []rune(s)
 	return string(runes[:maxRunes-1]) + "…"
+}
+
+// clip bounds s the same way truncate does, except that a maxRunes of zero
+// or less means the column is unbounded rather than empty.
+func clip(s string, maxRunes int) string {
+	if maxRunes <= 0 {
+		return s
+	}
+	return truncate(s, maxRunes)
 }
 
 func projectionCode(proj Projection, r Reason) string {

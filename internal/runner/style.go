@@ -30,6 +30,7 @@ type glyphEntry struct {
 // no terminal query: Colorize below only ever concatenates these.
 const (
 	ansiReset   = "\x1b[0m"
+	ansiDim     = "\x1b[2m"
 	ansiGreen   = "\x1b[32m"
 	ansiRed     = "\x1b[31m"
 	ansiYellow  = "\x1b[33m"
@@ -130,4 +131,22 @@ func (s Style) Colorize(p Projection, text string) string {
 		return text
 	}
 	return vocabulary[p].Colour + text + ansiReset
+}
+
+// dim and accent style the marks the live view uses for a binding that has
+// not settled yet. They carry no projection, because none has been derived,
+// and they never reach the settled output, so they stay out of the
+// projection vocabulary above.
+func (s Style) dim(text string) string {
+	if !s.Colour {
+		return text
+	}
+	return ansiDim + text + ansiReset
+}
+
+func (s Style) accent(text string) string {
+	if !s.Colour {
+		return text
+	}
+	return ansiCyan + text + ansiReset
 }

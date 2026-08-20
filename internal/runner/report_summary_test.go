@@ -42,13 +42,16 @@ func TestReportInferentialSummary(t *testing.T) {
 	if len(lines) < 2 {
 		t.Fatalf("expected at least 2 lines of output, got %d", len(lines))
 	}
-	summaryLine := lines[len(lines)-1]
+	closingLine := lines[len(lines)-1]
 
-	if summaryLine == "OK" || summaryLine == "pass" || summaryLine == "success" {
-		t.Errorf("summary line should not be a bare success word, got: %s", summaryLine)
+	if closingLine == "OK" || closingLine == "pass" || closingLine == "success" {
+		t.Errorf("a run must not close on a bare success word, got: %s", closingLine)
 	}
-	if !strings.Contains(summaryLine, "UNCHECKED=1") {
-		t.Errorf("summary line should mention unchecked count, got: %s", summaryLine)
+	if !strings.Contains(out, "kind-not-executable") {
+		t.Errorf("an expected-unchecked binding must state its reason, got:\n%s", out)
+	}
+	if !strings.Contains(out, "HCR-2001") || !strings.Contains(out, "Inferential check") {
+		t.Errorf("an expected-unchecked binding must be named in the detail block, got:\n%s", out)
 	}
 }
 

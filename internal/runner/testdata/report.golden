@@ -4,11 +4,11 @@
   ▲  could not run and blocks the result
   ◆  jigctl itself failed
 
-  ✓  HCR-0001  Title A                                      <dur>  test
-  ✗  HCR-0002  Title B                                            1 finding
-  ○  HCR-0003  Title C                                            kind-not-executable
-  ▲  HCR-0004  Title D                                            executable-missing
-  ◆  HCR-0005  Title E                                            process-start
+  ✓  HCR-0001  Title A     <dur>  test
+  ✗  HCR-0002  Title B           1 finding
+  ○  HCR-0003  Title C           kind-not-executable
+  ▲  HCR-0004  Title D           executable-missing
+  ◆  HCR-0005  Title E           process-start
 
   ✗  HCR-0002  Title B
        Summary B
@@ -25,5 +25,3 @@
   ◆  HCR-0005  Title E
        Other process-start failure
        Summary E
-
-  Done. PASS=1 VIOLATION=1 UNCHECKED=1 BLOCKED=1 ERROR=1

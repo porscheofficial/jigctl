@@ -124,3 +124,23 @@ Waivers remain evidence of evaluation rather than evidence of skipping.
 Summary counts expose unchecked work even when there are no findings, and
 strict callers may reject deliberate omissions without changing their normal
 meaning.
+
+## Notes
+
+### 2026-08-20
+
+The Decision above requires the summary to print its expected-unchecked and
+blocked-unchecked counts including when each count is zero. That obligation
+was written before a report had any other place to state unchecked work.
+ADR-0013 gave it one: the detail block repeats every non-passing binding
+individually, and an unchecked binding is not a passing one, so it is named
+there with its reason code whether or not anything else failed.
+
+The counts have therefore been dropped from the human-facing report, which
+now ends on its last detail entry. What the obligation protected is
+unaffected. A count of zero told the reader nothing they could act on, and
+a count above zero told them less than the entry that names the record.
+
+The obligation stands unchanged for `--plain`, which has no detail block and
+still prints both counts unconditionally. A consumer that parses counts
+parses that output, which is what ADR-0013 made it for.

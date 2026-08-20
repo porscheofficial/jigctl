@@ -15,6 +15,8 @@ exceptions:
     reason: "Runner measures duration of commands using time.Now."
   - scope: internal/runner/command_test.go
     reason: "Tests command duration measurement."
+  - scope: internal/runner/live.go
+    reason: "Live view measures elapsed time of a running binding using time.Now."
 ---
 Read the current time once at the invocation boundary, convert it to the
 UTC date used by validation, and thread that value through ordinary

@@ -14,12 +14,12 @@ var expectedRenderedOutput = `  ✓  passed
   ▲  could not run and blocks the result
   ◆  jigctl itself failed
 
-  ✓  HCR-0001  Pass                                         <dur>  cmd
-  ✗  HCR-0002  Violation                                          1 finding
-  ○  HCR-0003  Expected Unchecked                                 kind-not-executable
-  ▲  HCR-0004  Blocked Unchecked                                  executable-missing
-  ◆  HCR-0005  Operational                                        process-start
-  ✗  HCR-0006  Waived                                             1 finding
+  ✓  HCR-0001  Pass                   <dur>  cmd
+  ✗  HCR-0002  Violation                    1 finding
+  ○  HCR-0003  Expected Unchecked           kind-not-executable
+  ▲  HCR-0004  Blocked Unchecked            executable-missing
+  ◆  HCR-0005  Operational                  process-start
+  ✗  HCR-0006  Waived                       1 finding
 
   ✗  HCR-0002  Violation
        [pattern] b.txt
@@ -35,8 +35,6 @@ var expectedRenderedOutput = `  ✓  passed
 
   ✗  HCR-0006  Waived
        [pattern] foo.txt
-
-  Done. PASS=1 VIOLATION=2 UNCHECKED=1 BLOCKED=1 ERROR=1
 `
 
 func TestRefactorCharacterization(t *testing.T) {

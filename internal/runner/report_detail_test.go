@@ -45,6 +45,7 @@ func TestDetailBlockWidth(t *testing.T) {
 		Out:               &buf,
 		Rows:              BuildRows(plan, verdicts),
 		NormalizeDuration: true,
+		Width:             100,
 	})
 	if err != nil {
 		t.Fatalf("Render failed: %v", err)

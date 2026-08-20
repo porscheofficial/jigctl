@@ -172,3 +172,51 @@ detail block renders the summary but not the guidance body, which is
 discarded at parse time. Whether that body belongs in the detail block,
 and in what form, is a decision this record did not make and does not
 foreclose.
+
+### 2026-08-20 (second)
+
+Two of the decisions above have been reversed, and one constant they left
+implicit has been made a variable.
+
+The run no longer closes with the fixed-field ledger. Its stated purpose was
+to satisfy ADR-0012's unconditional-counts obligation by construction, and
+that obligation has been narrowed to `--plain` in a Note on that record. On
+a green run the ledger was five counts, four of them zero, restating what
+the absence of a detail block already said. On a broken one it restated in
+aggregate what the detail block had just said per record. The report now
+ends on its last detail entry, and ends on the scan list when nothing failed.
+
+A progress indicator is no longer rejected. The rejection assumed live
+output and byte-determinism need two rendering paths. They do not, because
+the live frames are not output. The view paints one line per binding into
+the terminal's alternate use of the cursor, repaints them on a tick, and
+on completion moves the cursor back over the block and erases it. `Render`
+then prints the settled report into the space the block occupied. The bytes
+that survive the run are produced by the same call as before, from the same
+rows, in the same order — a live run and a piped run differ in what was
+transiently on screen, not in what the terminal is left holding.
+
+The live view is off unless stdout is a terminal, which the determinism
+tests are not, and off additionally under `--plain`, under `TERM=dumb`,
+below sixty columns, and when the block would not fit the window. It reads
+its terminal size in `cmd/jigctl` and receives it as a number, so the
+renderer still does not learn what a terminal is.
+
+A binding that has not started is a dim `·`. A running one is a braille
+spinner beside a timer that counts up in tenths, so a reader watching a
+command that takes eight seconds can see it is progressing rather than
+hung, and can see which record it is spending them on. A settled one is
+replaced in place by the exact line the final report will carry, which
+makes the transition to the settled block invisible rather than a redraw.
+Braille was chosen over a clock face because emoji occupy two cells in some
+terminals and one in others, and every column right of the timer would
+shift by terminal.
+
+The scan list's title column was a constant forty runes, which truncated
+most real record titles. It is now sized from the longest title in the run,
+bounded by what the terminal can give it after the fixed columns and a
+sixteen-cell floor for the evidence column, and the detail block wraps to
+the terminal's width rather than to seventy-two. A destination with no
+measurable width — a pipe, a file, a test buffer — truncates nothing and
+sizes the column purely by content, which is what keeps rendering a pure
+function of the rows wherever a hash observes it.

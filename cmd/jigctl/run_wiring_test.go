@@ -97,7 +97,7 @@ func TestRunWiring_NoColor(t *testing.T) {
 
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, true, &out) // pass isTerminal=true but no-color=true
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out) // pass isTerminal=true but no-color=true
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestRunWiring_Plain(t *testing.T) {
 
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, true, &out)
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out)
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -177,7 +177,7 @@ func TestRunWiring_ColorEnabled(t *testing.T) {
 	// Also clear env vars that might disable color for this process
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, true, &out)
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out)
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -210,14 +210,14 @@ func TestRunWiring_OutputDifference(t *testing.T) {
 	// Color enabled run
 	runNoColor = false
 	runPlain = false
-	if err := runAction([]string{dir}, true, &outColor); err != nil {
+	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outColor); err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
 
 	// Plain run
 	runNoColor = false
 	runPlain = true
-	if err := runAction([]string{dir}, true, &outPlain); err != nil {
+	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outPlain); err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
 

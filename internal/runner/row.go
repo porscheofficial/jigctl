@@ -109,9 +109,37 @@ func buildLookupAndServicePaths(plan *hcr.Plan) (
 	return lookup, perRecord, knownServicePaths
 }
 
+// RowBuilder converts verdicts into rows one at a time, holding the
+// per-plan lookups that conversion needs. A run builds it once and then
+// either drains a whole verdict slice through BuildRows or feeds it single
+// verdicts as they settle, which is what the live view does.
+type RowBuilder struct {
+	plan              *hcr.Plan
+	lookup            map[BindingIdentity]*hcr.ExecutableBinding
+	perRecord         map[string]int
+	knownServicePaths []string
+}
+
+// NewRowBuilder indexes a plan so verdicts can be converted to rows.
+func NewRowBuilder(plan *hcr.Plan) *RowBuilder {
+	lookup, perRecord, knownServicePaths := buildLookupAndServicePaths(plan)
+	return &RowBuilder{
+		plan:              plan,
+		lookup:            lookup,
+		perRecord:         perRecord,
+		knownServicePaths: knownServicePaths,
+	}
+}
+
+// Row computes the post-exception findings and the final Projection for one
+// verdict.
+func (b *RowBuilder) Row(v *Verdict) Row {
+	return processVerdict(b.plan, v, b.lookup, b.perRecord, b.knownServicePaths)
+}
+
 // BuildRows computes post-exception findings and the final Projection ONCE per verdict.
 func BuildRows(plan *hcr.Plan, verdicts []*Verdict) []Row {
-	lookup, perRecord, knownServicePaths := buildLookupAndServicePaths(plan)
+	builder := NewRowBuilder(plan)
 
 	rows := make([]Row, 0, len(verdicts))
 	for _, v := range verdicts {
@@ -119,7 +147,7 @@ func BuildRows(plan *hcr.Plan, verdicts []*Verdict) []Row {
 			continue
 		}
 
-		rows = append(rows, processVerdict(plan, v, lookup, perRecord, knownServicePaths))
+		rows = append(rows, builder.Row(v))
 	}
 
 	return rows
