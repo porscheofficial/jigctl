@@ -2,3 +2,6 @@
 # jigctl is single-service at this milestone: there is no services/ directory,
 # so the effective record set is repo-only.
 service_globs = []
+
+[rationale]
+ADR = "docs/adr/{rest}-*.md"
