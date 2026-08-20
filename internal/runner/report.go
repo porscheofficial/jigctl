@@ -3,7 +3,6 @@ package runner
 import (
 	"fmt"
 	"io"
-	"sort"
 	"unicode/utf8"
 )
 
@@ -22,61 +21,92 @@ type RenderOptions struct {
 }
 
 // Render prints the human-facing shape of a run: a legend when the run needs
-// one, one scan-list line per binding, and a detail block repeating every
-// binding that did not pass.
+// one, one scan-list line per record, and a detail block repeating every
+// record the reader has to act on.
 func Render(opts RenderOptions) error {
-	rows := sortRows(opts.Rows)
-	layout := ComputeLayout(opts.Width, rows)
+	records := GroupRecords(opts.Rows)
+	layout := ComputeLayout(opts.Width, records)
 
-	var nonPassing []*Row
-	projections := make([]Projection, 0, len(rows))
-	for i := range rows {
-		r := &rows[i]
-		projections = append(projections, r.Projection)
-		if r.Projection != ProjectionPass {
-			nonPassing = append(nonPassing, r)
+	renderLegend(opts, records)
+
+	for i := range records {
+		renderScanLine(opts, layout, &records[i])
+	}
+
+	detailed := make([]*Record, 0, len(records))
+	for i := range records {
+		if needsDetail(&records[i]) {
+			detailed = append(detailed, &records[i])
 		}
 	}
 
-	if len(nonPassing) > 0 {
-		legend := LegendLines(projections)
-		for _, l := range legend {
-			fmt.Fprintf(opts.Out, "  %s\n", l)
-		}
-		if len(legend) > 0 {
-			fmt.Fprintln(opts.Out)
-		}
-	}
-
-	for i := range rows {
-		renderScanLine(opts, layout, &rows[i])
-	}
-
-	if len(nonPassing) > 0 {
+	if len(detailed) > 0 {
 		fmt.Fprintln(opts.Out)
-		for i, r := range nonPassing {
+		for i, rec := range detailed {
 			if i > 0 {
 				fmt.Fprintln(opts.Out)
 			}
-			renderDetail(opts, layout, r)
+			renderDetail(opts, layout, rec)
 		}
 	}
 
 	return nil
 }
 
-// sortRows returns a copy of rows in the order a run is always printed in:
-// by record path, then by binding index within a record.
-func sortRows(in []Row) []Row {
-	rows := make([]Row, len(in))
-	copy(rows, in)
-	sort.Slice(rows, func(i, j int) bool {
-		if rows[i].Identity.RecordPath != rows[j].Identity.RecordPath {
-			return rows[i].Identity.RecordPath < rows[j].Identity.RecordPath
+// needsDetail reports whether a record's outcome asks somebody to do
+// something now, which is the only reason the detail block exists.
+//
+// Expected-unchecked is absent in full. Repeating one in detail — glyph, id,
+// title, summary — says nothing the scan list did not, because nothing about
+// it is wrong. A draft declares that a rule is not enforced yet; an
+// inferential or agent-review binding declares that a judgement is owed to a
+// human or an agent. Both will declare the same thing on every run until
+// somebody acts, so both would sit in the block permanently, spending exactly
+// the attention it exists to direct at the records that are broken. The scan
+// line names them and their record is one glob from their id.
+func needsDetail(rec *Record) bool {
+	return rec.Projection != ProjectionPass && rec.Projection != ProjectionExpectedUnchecked
+}
+
+// renderLegend prints the vocabulary the run actually used, once, above the
+// list. A run that is entirely passing and entirely enforced needs none: both
+// its glyphs are the ones a reader expects to see and neither carries news.
+func renderLegend(opts RenderOptions, records []Record) {
+	projections := make([]Projection, 0, len(records))
+	states := make([]string, 0, len(records))
+	for i := range records {
+		projections = append(projections, records[i].Projection)
+		states = append(states, records[i].State)
+	}
+
+	if !needsLegend(projections, states) {
+		return
+	}
+
+	lines := LegendLines(opts.Style, projections)
+	lines = append(lines, StateLegendLines(opts.Style, states)...)
+	if len(lines) == 0 {
+		return
+	}
+
+	for _, line := range lines {
+		fmt.Fprintf(opts.Out, "  %s\n", line)
+	}
+	fmt.Fprintln(opts.Out)
+}
+
+func needsLegend(projections []Projection, states []string) bool {
+	for _, p := range projections {
+		if p != ProjectionPass {
+			return true
 		}
-		return rows[i].Identity.BindingIndex < rows[j].Identity.BindingIndex
-	})
-	return rows
+	}
+	for _, s := range states {
+		if _, known := stateVocabulary[s]; known && s != "enforced" {
+			return true
+		}
+	}
+	return false
 }
 
 // truncate bounds s to maxRunes, marking the cut with an ellipsis.

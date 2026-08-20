@@ -13,8 +13,12 @@ type Row struct {
 	Locator  string
 	RecordID string
 	// Not-in-lookup case yields empty title as there is no executable binding to read from.
-	Title         string
-	Kind          string
+	Title string
+	Kind  string
+	// State is the record's authored lifecycle position. Every binding of
+	// one record carries the same value, since state is a record-level
+	// field, which is what lets a grouped record render one state glyph.
+	State         string
 	Severity      string
 	Summary       string
 	Tool          string
@@ -207,6 +211,7 @@ func processVerdict(
 		row.Tool = b.Tool
 		row.Docs = b.Docs
 		row.Title = b.Title
+		row.State = b.State
 	}
 
 	for i := range mutatedFindings {

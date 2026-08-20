@@ -171,7 +171,7 @@ func stripANSI(s string) string {
 func TestLegend_contains_projection_glyph(t *testing.T) {
 	// Given each of the five real projections
 	for _, p := range operationalProjections {
-		got := Legend(p)
+		got := Legend(Style{}, p)
 		glyph := Glyph(p)
 
 		// When its legend line is read
@@ -192,11 +192,11 @@ func TestLegendLines_orders_deterministically_and_dedupes(t *testing.T) {
 	given := []Projection{ProjectionOperational, ProjectionPass, ProjectionPass, ProjectionViolation}
 
 	// When the legend lines are requested
-	got := LegendLines(given)
+	got := LegendLines(Style{}, given)
 
 	// Then there are exactly three lines, in fixed vocabulary order
 	// (Pass, Violation, Operational) regardless of the caller's order.
-	want := []string{Legend(ProjectionPass), Legend(ProjectionViolation), Legend(ProjectionOperational)}
+	want := []string{Legend(Style{}, ProjectionPass), Legend(Style{}, ProjectionViolation), Legend(Style{}, ProjectionOperational)}
 	if len(got) != len(want) {
 		t.Fatalf("LegendLines(%v) = %v (%d lines), want %d lines", given, got, len(got), len(want))
 	}
@@ -209,12 +209,35 @@ func TestLegendLines_orders_deterministically_and_dedupes(t *testing.T) {
 
 func TestLegendLines_excludes_projection_invalid(t *testing.T) {
 	// Given a caller that (incorrectly) includes the invalid sentinel
-	got := LegendLines([]Projection{ProjectionInvalid, ProjectionPass})
+	got := LegendLines(Style{}, []Projection{ProjectionInvalid, ProjectionPass})
 
 	// Then only the one legitimate projection's line is present: Invalid is
 	// not one of the five reportable outcomes.
-	want := Legend(ProjectionPass)
+	want := Legend(Style{}, ProjectionPass)
 	if len(got) != 1 || got[0] != want {
 		t.Fatalf("LegendLines with Invalid included = %v, want [%q]", got, want)
+	}
+}
+
+func TestLegendGlyphIsStyledLikeTheListGlyph(t *testing.T) {
+	// Given colour is enabled, as it is on the terminal the legend is for
+	style := Style{Colour: true}
+
+	// When each legend line is compared against the mark the list will draw
+	for _, p := range operationalProjections {
+		want := style.Colorize(p, Glyph(p))
+
+		// Then the legend opens with those exact bytes. A key that renders
+		// its mark differently from the mark it is keying is not a key.
+		if !strings.HasPrefix(Legend(style, p), want) {
+			t.Errorf("Legend(%v) = %q, want it to open with the list's glyph %q", p, Legend(style, p), want)
+		}
+	}
+
+	for _, s := range stateOrder {
+		want := style.ColorizeState(s, StateGlyph(s))
+		if !strings.HasPrefix(StateLegend(style, s), want) {
+			t.Errorf("StateLegend(%q) = %q, want it to open with the list's glyph %q", s, StateLegend(style, s), want)
+		}
 	}
 }

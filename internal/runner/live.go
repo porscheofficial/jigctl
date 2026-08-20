@@ -39,14 +39,37 @@ const (
 // others, which would shift every column to their right.
 var spinnerFrames = []string{"⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"}
 
-type liveRow struct {
-	identity BindingIdentity
+// liveRecord is one record's line in flight. It tracks its bindings by count
+// rather than individually because the line does not distinguish them: a
+// record is running while any of its bindings is, and settles only once all
+// of them have, which is what lets the finished line be the same bytes the
+// settled report will print.
+type liveRecord struct {
+	path     string
 	recordID string
 	title    string
+	state    string
+	bindings int
+	running  int
 	started  time.Time
-	running  bool
-	row      Row
-	settled  bool
+	planned  []string
+	rows     []Row
+}
+
+func (r *liveRecord) settled() bool { return len(r.rows) == r.bindings }
+
+func (r *liveRecord) evidence() string { return strings.Join(r.planned, "; ") }
+
+func (r *liveRecord) addPlanned(text string) {
+	if text == "" {
+		return
+	}
+	for _, p := range r.planned {
+		if p == text {
+			return
+		}
+	}
+	r.planned = append(r.planned, text)
 }
 
 // LiveOptions configures the transient progress view.
@@ -61,11 +84,11 @@ type LiveOptions struct {
 }
 
 // LiveView paints the scan list in place while a run executes, so a reader
-// can see which binding is in flight and how long it has been running. It is
+// can see which record is in flight and how long it has been running. It is
 // deliberately transient: Close erases the whole block, and the settled
 // output is then printed by Render, from the same scanLine function the view
-// paints its finished rows with. Nothing the view writes survives the run, so
-// no live frame can enter a determinism hash.
+// paints its finished records with. Nothing the view writes survives the run,
+// so no live frame can enter a determinism hash.
 type LiveView struct {
 	out     io.Writer
 	style   Style
@@ -74,7 +97,7 @@ type LiveView struct {
 	tick    time.Duration
 
 	mu      sync.Mutex
-	rows    []liveRow
+	records []liveRecord
 	index   map[BindingIdentity]int
 	frame   int
 	painted int
@@ -85,8 +108,8 @@ type LiveView struct {
 	wg       sync.WaitGroup
 }
 
-// NewLiveView starts a live view over the plan's bindings. It reports false
-// when the destination cannot host one — no bindings to show, or a terminal
+// NewLiveView starts a live view over the plan's records. It reports false
+// when the destination cannot host one — no records to show, or a terminal
 // too narrow or too short to repaint without wrapping or scrolling — in which
 // case the run should simply print its settled output when it finishes.
 func NewLiveView(opts LiveOptions) (*LiveView, bool) {
@@ -94,8 +117,8 @@ func NewLiveView(opts LiveOptions) (*LiveView, bool) {
 		return nil, false
 	}
 
-	rows := liveSkeleton(opts.Plan)
-	if len(rows) == 0 || opts.Width < minLiveWidth || opts.Height < len(rows)+liveHeadroom {
+	records, index := liveSkeleton(opts.Plan)
+	if len(records) == 0 || opts.Width < minLiveWidth || opts.Height < len(records)+liveHeadroom {
 		return nil, false
 	}
 
@@ -105,10 +128,8 @@ func NewLiveView(opts LiveOptions) (*LiveView, bool) {
 	}
 
 	longest := 0
-	index := make(map[BindingIdentity]int, len(rows))
-	for i := range rows {
-		index[rows[i].identity] = i
-		if n := utf8.RuneCountInString(rows[i].title); n > longest {
+	for i := range records {
+		if n := utf8.RuneCountInString(records[i].title); n > longest {
 			longest = n
 		}
 	}
@@ -119,7 +140,7 @@ func NewLiveView(opts LiveOptions) (*LiveView, bool) {
 		layout:  layoutFor(opts.Width, longest),
 		builder: NewRowBuilder(opts.Plan),
 		tick:    tick,
-		rows:    rows,
+		records: records,
 		index:   index,
 		stop:    make(chan struct{}),
 	}
@@ -139,8 +160,11 @@ func (v *LiveView) Start(id BindingIdentity) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if i, ok := v.index[id]; ok {
-		v.rows[i].running = true
-		v.rows[i].started = time.Now()
+		r := &v.records[i]
+		if r.running == 0 {
+			r.started = time.Now()
+		}
+		r.running++
 	}
 	v.write(v.paint())
 }
@@ -150,11 +174,15 @@ func (v *LiveView) Done(id BindingIdentity, verdict *Verdict) {
 	v.mu.Lock()
 	defer v.mu.Unlock()
 	if i, ok := v.index[id]; ok {
-		r := &v.rows[i]
-		r.running = false
+		r := &v.records[i]
+		if r.running > 0 {
+			r.running--
+		}
 		if verdict != nil {
-			r.row = v.builder.Row(verdict)
-			r.settled = true
+			r.rows = append(r.rows, v.builder.Row(verdict))
+			sort.Slice(r.rows, func(i, j int) bool {
+				return r.rows[i].Identity.BindingIndex < r.rows[j].Identity.BindingIndex
+			})
 		}
 	}
 	v.write(v.paint())
@@ -197,31 +225,51 @@ func (v *LiveView) loop() {
 	}
 }
 
-func liveSkeleton(plan *hcr.Plan) []liveRow {
-	total := 0
-	for i := range plan.Targets {
-		total += len(plan.Targets[i].Bindings)
-	}
-
-	rows := make([]liveRow, 0, total)
+// liveSkeleton lays out one line per record, in the order the settled report
+// prints them, and returns the binding-to-line index progress is reported
+// through. A record bound twice occupies one line, so the block the view
+// erases is the same height as the list Render prints into its place.
+func liveSkeleton(plan *hcr.Plan) (records []liveRecord, index map[BindingIdentity]int) {
+	byPath := make(map[string]*liveRecord)
 	for i := range plan.Targets {
 		t := &plan.Targets[i]
 		for j := range t.Bindings {
 			b := &t.Bindings[j]
-			rows = append(rows, liveRow{
-				identity: BindingIdentity{RecordPath: b.RecordPath, BindingIndex: b.BindingIndex},
-				recordID: b.RecordID,
-				title:    b.Title,
-			})
+			rec, ok := byPath[b.RecordPath]
+			if !ok {
+				rec = &liveRecord{
+					path:     b.RecordPath,
+					recordID: b.RecordID,
+					title:    b.Title,
+					state:    b.State,
+				}
+				byPath[b.RecordPath] = rec
+			}
+			rec.bindings++
+			rec.addPlanned(plannedEvidence(b))
 		}
 	}
 
-	sort.Slice(rows, func(i, j int) bool {
-		if rows[i].identity.RecordPath != rows[j].identity.RecordPath {
-			return rows[i].identity.RecordPath < rows[j].identity.RecordPath
-		}
-		return rows[i].identity.BindingIndex < rows[j].identity.BindingIndex
-	})
+	records = make([]liveRecord, 0, len(byPath))
+	for _, rec := range byPath {
+		records = append(records, *rec)
+	}
+	sort.Slice(records, func(i, j int) bool { return records[i].path < records[j].path })
 
-	return rows
+	line := make(map[string]int, len(records))
+	for i := range records {
+		line[records[i].path] = i
+	}
+
+	index = make(map[BindingIdentity]int, len(records))
+	for i := range plan.Targets {
+		t := &plan.Targets[i]
+		for j := range t.Bindings {
+			b := &t.Bindings[j]
+			id := BindingIdentity{RecordPath: b.RecordPath, BindingIndex: b.BindingIndex}
+			index[id] = line[b.RecordPath]
+		}
+	}
+
+	return records, index
 }

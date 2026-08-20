@@ -4,24 +4,20 @@
   ▲  could not run and blocks the result
   ◆  jigctl itself failed
 
-  ✓  HCR-0001  Title A     <dur>  test
-  ✗  HCR-0002  Title B           1 finding
-  ○  HCR-0003  Title C           kind-not-executable
-  ▲  HCR-0004  Title D           executable-missing
-  ◆  HCR-0005  Title E           process-start
+  ✓    HCR-0001  Title A     <dur>  test
+  ✗    HCR-0002  Title B           1 finding
+  ○    HCR-0003  Title C           nothing here for jigctl to run
+  ▲    HCR-0004  Title D           executable is not on PATH
+  ◆    HCR-0005  Title E           process could not be started
 
-  ✗  HCR-0002  Title B
+  ✗    HCR-0002  Title B
        Summary B
        b.txt:10
 
-  ○  HCR-0003  Title C
-       Kind cannot execute
-       Summary C
-
-  ▲  HCR-0004  Title D
-       Executable is absent from PATH
+  ▲    HCR-0004  Title D
+       executable is not on PATH
        Summary D
 
-  ◆  HCR-0005  Title E
-       Other process-start failure
+  ◆    HCR-0005  Title E
+       process could not be started
        Summary E

@@ -28,17 +28,19 @@ type Layout struct {
 
 const (
 	// scanFixedCells counts every cell of a scan line that is neither the
-	// title nor the evidence: the two-cell indent, the glyph, the eight-cell
-	// record id, the seven-cell duration column, and the four two-cell gaps
-	// separating them.
-	scanFixedCells = 2 + 1 + 8 + 7 + 2*4
+	// title nor the evidence: the two-cell indent, the outcome glyph, the
+	// single space and the state glyph beside it, the eight-cell record id,
+	// the seven-cell duration column, and the four two-cell gaps separating
+	// the state glyph, the id, the title, the duration and the evidence.
+	scanFixedCells = 2 + 1 + 1 + 1 + 8 + 7 + 2*4
 
 	// detailIndent is the left margin the detail block wraps prose into.
 	detailIndent = 7
 
 	// headingIndent is the left margin a detail heading wraps into: the
-	// two-cell indent, the glyph, the eight-cell record id and two gaps.
-	headingIndent = 2 + 1 + 8 + 2*2
+	// two-cell indent, the outcome glyph, the space and state glyph beside
+	// it, the eight-cell record id and two gaps.
+	headingIndent = 2 + 1 + 1 + 1 + 8 + 2*2
 
 	// minTitleCells keeps a title readable when the terminal is too narrow to
 	// honour both variable columns at their natural size.
@@ -61,10 +63,10 @@ const (
 
 // ComputeLayout sizes the variable columns for one run. Width is the
 // destination's rune width, or zero when it has none.
-func ComputeLayout(width int, rows []Row) Layout {
+func ComputeLayout(width int, records []Record) Layout {
 	longest := 0
-	for i := range rows {
-		if n := utf8.RuneCountInString(rows[i].Title); n > longest {
+	for i := range records {
+		if n := utf8.RuneCountInString(records[i].Title); n > longest {
 			longest = n
 		}
 	}

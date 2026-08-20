@@ -99,8 +99,8 @@ enforced_by:
 	if err == nil {
 		t.Fatal("Expected error, got nil")
 	}
-	if !strings.Contains(stdout.String(), "authorization-denied") {
-		t.Errorf("Expected authorization-denied, got: %s", stdout.String())
+	if !strings.Contains(stdout.String(), "needs --allow-exec") {
+		t.Errorf("Expected the run to name the flag it needs, got: %s", stdout.String())
 	}
 
 	// With --allow-exec
@@ -151,8 +151,8 @@ enforced_by:
 	}
 
 	out := stdout.String()
-	if !strings.Contains(out, "path-escapes-root") {
-		t.Errorf("Expected path-escapes-root, got: %s", out)
+	if !strings.Contains(out, "path escapes the repository root") {
+		t.Errorf("Expected the run to report the escaped path, got: %s", out)
 	}
 }
 

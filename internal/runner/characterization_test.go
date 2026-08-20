@@ -14,26 +14,23 @@ var expectedRenderedOutput = `  ✓  passed
   ▲  could not run and blocks the result
   ◆  jigctl itself failed
 
-  ✓  HCR-0001  Pass                   <dur>  cmd
-  ✗  HCR-0002  Violation                    1 finding
-  ○  HCR-0003  Expected Unchecked           kind-not-executable
-  ▲  HCR-0004  Blocked Unchecked            executable-missing
-  ◆  HCR-0005  Operational                  process-start
-  ✗  HCR-0006  Waived                       1 finding
+  ✓    HCR-0001  Pass                   <dur>  cmd
+  ✗    HCR-0002  Violation                    1 finding
+  ○    HCR-0003  Expected Unchecked           nothing here for jigctl to run
+  ▲    HCR-0004  Blocked Unchecked            executable is not on PATH
+  ◆    HCR-0005  Operational                  process could not be started
+  ✗    HCR-0006  Waived                       1 finding
 
-  ✗  HCR-0002  Violation
+  ✗    HCR-0002  Violation
        [pattern] b.txt
 
-  ○  HCR-0003  Expected Unchecked
-       Kind cannot execute
+  ▲    HCR-0004  Blocked Unchecked
+       executable is not on PATH
 
-  ▲  HCR-0004  Blocked Unchecked
-       Executable is absent from PATH
+  ◆    HCR-0005  Operational
+       process could not be started
 
-  ◆  HCR-0005  Operational
-       Other process-start failure
-
-  ✗  HCR-0006  Waived
+  ✗    HCR-0006  Waived
        [pattern] foo.txt
 `
 

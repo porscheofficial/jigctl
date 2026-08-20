@@ -16,12 +16,12 @@ func (v *LiveView) paint() string {
 	if v.painted > 0 {
 		fmt.Fprintf(&b, cursorUpPattern, v.painted)
 	}
-	for i := range v.rows {
+	for i := range v.records {
 		b.WriteString(eraseLine)
-		b.WriteString(v.liveLine(&v.rows[i]))
+		b.WriteString(v.liveLine(&v.records[i]))
 		b.WriteString("\n")
 	}
-	v.painted = len(v.rows)
+	v.painted = len(v.records)
 	return b.String()
 }
 
@@ -37,17 +37,20 @@ func (v *LiveView) write(frame string) {
 	}
 }
 
-func (v *LiveView) liveLine(r *liveRow) string {
-	if r.settled {
-		return scanLine(v.style, v.layout, &r.row, false)
+func (v *LiveView) liveLine(r *liveRecord) string {
+	if r.settled() {
+		settled := newRecord(r.path, r.rows)
+		return scanLine(v.style, v.layout, &settled, false)
 	}
-	if r.running {
+
+	state := v.style.ColorizeState(r.state, StateGlyph(r.state))
+	if r.running > 0 {
 		return composeScanLine(v.layout,
-			v.style.accent(pendingGlyph), r.recordID, r.title,
-			liveDurationCell(v.frame, time.Since(r.started)), "")
+			v.style.accent(pendingGlyph), state, r.recordID, r.title,
+			liveDurationCell(v.frame, time.Since(r.started)), r.evidence())
 	}
 	return composeScanLine(v.layout,
-		v.style.dim(pendingGlyph), r.recordID, r.title, pendingDuration, "")
+		v.style.dim(pendingGlyph), state, r.recordID, r.title, pendingDuration, r.evidence())
 }
 
 // liveDurationCell renders the spinner and the elapsed time into the same

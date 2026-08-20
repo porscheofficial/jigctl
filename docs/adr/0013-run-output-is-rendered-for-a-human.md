@@ -220,3 +220,94 @@ the terminal's width rather than to seventy-two. A destination with no
 measurable width — a pipe, a file, a test buffer — truncates nothing and
 sizes the column purely by content, which is what keeps rendering a pure
 function of the rows wherever a hash observes it.
+
+### 2026-08-20 (third)
+
+The scan list is one line per record, not one per binding.
+
+A record with two bindings printed twice, and because the line carries the
+record's id and title and neither binding's identity, the two lines were
+byte-identical. A reader counting them counted the enforcement mechanism
+rather than the rules, and a reader who knew the tool still had to look at
+`--plain` to find out whether HCR-0412 had been checked twice or listed
+twice by mistake. Bindings are how a record gets checked; they are not what
+the reader came to read. The line now reports the record, its duration is
+the sum of what its bindings spent, and its outcome is the worst of theirs,
+with an invalid record ranked above everything else so a defect in the
+harness can never be hidden behind a violation in the code.
+
+The detail block no longer repeats every binding that did not pass. Its
+purpose is to give a reader something to act on now, and expected-unchecked
+has nothing: a draft says a rule is not enforced yet and will say so again
+on every run until somebody promotes it, and printing its id, title and
+summary a second time spends exactly the attention the block exists to
+direct at the records that are broken.
+
+An inferential or agent-review binding was briefly treated as the exception,
+on the grounds that it is an obligation the run has just reported nobody
+discharged. That is true and it is still not a reason to print it twice.
+The obligation does not expire either, so the entry would sit in the block
+permanently and read as clutter for precisely as long as it read as news —
+which is to say, not at all after the first run. What the reader needs is to
+know which record is waiting on them, and the scan line already says so, in
+words, next to an id whose record is one glob away. So the block is gated on
+the projection: everything that is expected-unchecked stays in the list and
+out of the block, and the block holds only violations, blocked checks and
+jigctl's own failures.
+
+The record's state has its own column, one cell wide, between the outcome
+glyph and the id. It was previously visible only as `record-draft`
+appearing in the right-hand column, which is where evidence goes, and only
+on the records whose state stopped them running: an enforced record and a
+warn record were indistinguishable, and a draft was legible only to a
+reader who already knew the vocabulary. The glyphs are a shade ramp —
+`░` draft, `▒` warn, `█` enforced — because how much force a record has is
+a quantity, and a ramp is read as one without being read as a word.
+`deprecated` is `╳`, deliberately off the ramp: it is withdrawn, not a
+lesser amount of enforcement. The only styling the column takes is
+intensity, because the ramp is already made of intensity: dim draws a light
+shade lighter, along the axis the glyph is on. `warn` briefly carried
+yellow, and a hue is a second axis — it read as an alarm rather than as a
+position on the ramp, and drowned out the fill the reader is meant to see.
+Yellow now means one thing in the output, that a check was blocked. Enforced
+carries no colour either, since the common case must not compete with the
+outcome glyph for the eye. The shapes differ from each other, so colour is
+never the only thing carrying the distinction, and a state the run does not
+recognise leaves the cell blank rather than guessing.
+
+The right-hand column now says why a check did not run, in words, which is
+what the first Note above claimed it already did. It emitted the machine
+code. `authorization-denied` reads as `needs --allow-exec`, because the
+reader of that line has something to do about it and the flag is the whole
+of it. `kind-not-executable` is resolved against the binding's kind, since
+it names a condition without naming its cause and the cause is different in
+each of the three cases: an inferential binding is a human judgement, an
+agent-review binding is read by an agent, an external binding is checked by
+a named tool documented at a named URL. A draft or deprecated record says
+nothing at all there, because the state column has just said it.
+
+This gives the two audiences separate vocabularies over one set of reason
+codes. `--plain` keeps the codes and the sentences it has always emitted,
+because a script is matching those bytes; the default output has its own
+phrasing, free to be reworded whenever a reader is served better by it.
+
+The live view names each command before it runs it. A spinner beside a title
+says a record is being checked and nothing about what is taking the time, and
+the command was previously readable only once it had finished — which is the
+one moment the reader no longer needs it. Every line now carries its command
+from the first frame, so a run that stalls has already said what it stalled
+on. The planned text is the same bytes the settled line will print, taken
+from the same split the executor runs, so the column does not rewrite itself
+as the run passes over it; a binding the run will not attempt says nothing,
+since naming a command that is never going to run is a promise the run has
+already broken.
+
+The legend draws its glyphs styled exactly as the list draws them. They were
+previously unstyled, so a run with colour enabled printed a green tick in the
+list and a plain one in the key meant to explain it, and every glyph that
+carries colour was keyed by one that did not. A legend is not prose about the
+marks, it is a specimen of them; if the specimen and the mark differ, the
+reader has to work out which difference is meaningful, which is the entire
+cost the legend exists to save. It follows that a state whose entry carries
+no colour is drawn plain in both places, which is why `▒` and `█` look the
+same in the key as they do in the list.

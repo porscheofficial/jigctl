@@ -15,7 +15,7 @@ func TestReportInferentialSummary(t *testing.T) {
 			{
 				Kind: "repo",
 				Bindings: []hcr.ExecutableBinding{
-					{RecordPath: "Inf.md", BindingIndex: 0, RecordID: "HCR-2001", Summary: "Inferential check", Kind: "inferential"},
+					{RecordPath: "Inf.md", BindingIndex: 0, RecordID: "HCR-2001", Title: "Inferential check", Summary: "A human decides this one", Kind: "inferential"},
 				},
 			},
 		},
@@ -47,11 +47,14 @@ func TestReportInferentialSummary(t *testing.T) {
 	if closingLine == "OK" || closingLine == "pass" || closingLine == "success" {
 		t.Errorf("a run must not close on a bare success word, got: %s", closingLine)
 	}
-	if !strings.Contains(out, "kind-not-executable") {
-		t.Errorf("an expected-unchecked binding must state its reason, got:\n%s", out)
+	if !strings.Contains(out, unexecutableKinds["inferential"]) {
+		t.Errorf("an expected-unchecked binding must say why it did not run, got:\n%s", out)
 	}
 	if !strings.Contains(out, "HCR-2001") || !strings.Contains(out, "Inferential check") {
-		t.Errorf("an expected-unchecked binding must be named in the detail block, got:\n%s", out)
+		t.Errorf("an expected-unchecked binding must be named in the scan list, got:\n%s", out)
+	}
+	if strings.Contains(out, "A human decides this one") {
+		t.Errorf("an expected-unchecked binding must not be repeated in the detail block, got:\n%s", out)
 	}
 }
 

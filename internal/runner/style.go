@@ -91,10 +91,12 @@ func Glyph(p Projection) string {
 }
 
 // Legend returns the one-line legend entry for a projection: its glyph, two
-// spaces, then a short description of what the projection means.
-func Legend(p Projection) string {
+// spaces, then a short description of what the projection means. The glyph is
+// styled exactly as the list styles it, because a key that draws a mark
+// differently from the mark it is keying is not a key.
+func Legend(style Style, p Projection) string {
 	entry := vocabulary[p]
-	return entry.Glyph + "  " + entry.Legend
+	return style.Colorize(p, entry.Glyph) + "  " + entry.Legend
 }
 
 // LegendLines returns one legend line per distinct real projection present
@@ -105,7 +107,7 @@ func Legend(p Projection) string {
 // belongs to the renderer that already collected the run's projections.
 // This function only turns the set the renderer decided to print into
 // ordered, deduplicated lines.
-func LegendLines(projections []Projection) []string {
+func LegendLines(style Style, projections []Projection) []string {
 	present := make(map[Projection]struct{}, len(projections))
 	for _, p := range projections {
 		present[p] = struct{}{}
@@ -114,7 +116,7 @@ func LegendLines(projections []Projection) []string {
 	lines := make([]string, 0, len(legendOrder))
 	for _, p := range legendOrder {
 		if _, ok := present[p]; ok {
-			lines = append(lines, Legend(p))
+			lines = append(lines, Legend(style, p))
 		}
 	}
 	return lines
