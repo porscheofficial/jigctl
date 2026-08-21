@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -142,5 +143,97 @@ func TestJSONDeterminism(t *testing.T) {
 
 	if len(hashes) != 1 {
 		t.Errorf("expected exactly 1 distinct hash across 5 renders, got %d", len(hashes))
+	}
+}
+
+// TestJSONDraftBindingExecutionNull verifies that a state: draft command
+// binding, which is never executed, serializes with an explicit JSON
+// "execution": null rather than omitting the field entirely.
+func TestJSONDraftBindingExecutionNull(t *testing.T) {
+	plan := &hcr.Plan{
+		Targets: []hcr.Target{
+			{
+				Kind: "repo",
+				Bindings: []hcr.ExecutableBinding{
+					{RecordPath: "D.md", BindingIndex: 0, RecordID: "HCR-1004", Title: "Title D", Summary: "Check D", State: "draft", Kind: "command"},
+				},
+			},
+		},
+	}
+
+	verdicts := []*Verdict{
+		NewNotAttemptedVerdict(&VerdictReport{
+			Identity: BindingIdentity{RecordPath: "D.md", BindingIndex: 0},
+			Kind:     "command",
+			Severity: "advisory",
+			Target:   TargetProvenance{Name: "repo", Path: ""},
+		}, ReasonKindNotExecutable),
+	}
+
+	var buf bytes.Buffer
+	err := RenderJSON(&buf, JSONOptions{
+		Rows:              BuildRows(plan, verdicts),
+		NormalizeDuration: true,
+	})
+	if err != nil {
+		t.Fatalf("RenderJSON failed: %v", err)
+	}
+
+	assertDraftBindingTyped(t, buf.Bytes())
+	assertDraftBindingRawExecutionNull(t, buf.Bytes())
+}
+
+// assertDraftBindingTyped checks the typed JSONDocument decode of a draft
+// binding: exactly one record/binding, correct state, and a nil Execution.
+func assertDraftBindingTyped(t *testing.T, data []byte) {
+	t.Helper()
+
+	var doc JSONDocument
+	if err := json.Unmarshal(data, &doc); err != nil {
+		t.Fatalf("failed to unmarshal JSON output: %v", err)
+	}
+
+	if len(doc.Records) != 1 || len(doc.Records[0].Bindings) != 1 {
+		t.Fatalf("expected exactly 1 record with 1 binding, got %+v", doc.Records)
+	}
+	if doc.Records[0].State != "draft" {
+		t.Fatalf("expected record state %q, got %q", "draft", doc.Records[0].State)
+	}
+	if doc.Records[0].Bindings[0].Execution != nil {
+		t.Errorf("expected Execution to unmarshal to nil for a draft binding, got %+v", doc.Records[0].Bindings[0].Execution)
+	}
+}
+
+// assertDraftBindingRawExecutionNull confirms the "execution" key is present
+// AND explicitly null in the raw JSON, not merely absent from the output.
+func assertDraftBindingRawExecutionNull(t *testing.T, data []byte) {
+	t.Helper()
+
+	var raw map[string]interface{}
+	if err := json.Unmarshal(data, &raw); err != nil {
+		t.Fatalf("failed to unmarshal raw JSON: %v", err)
+	}
+	records, ok := raw["records"].([]interface{})
+	if !ok || len(records) != 1 {
+		t.Fatalf("expected 1 raw record, got %+v", raw["records"])
+	}
+	record, ok := records[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected record to be a JSON object, got %T", records[0])
+	}
+	bindings, ok := record["bindings"].([]interface{})
+	if !ok || len(bindings) != 1 {
+		t.Fatalf("expected 1 raw binding, got %+v", record["bindings"])
+	}
+	binding, ok := bindings[0].(map[string]interface{})
+	if !ok {
+		t.Fatalf("expected binding to be a JSON object, got %T", bindings[0])
+	}
+	value, present := binding["execution"]
+	if !present {
+		t.Fatalf("expected \"execution\" key to be present in binding JSON, but it was absent: %+v", binding)
+	}
+	if value != nil {
+		t.Errorf("expected \"execution\" to be JSON null, got %+v", value)
 	}
 }
