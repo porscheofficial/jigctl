@@ -52,7 +52,9 @@ taken, which constraints are already covered, and the repo's house style for
 
 Run `jigctl validate <root>` if a binary or source checkout is available. Never
 start authoring into a tree that is already failing — report the findings and
-let the user decide.
+let the user decide. You can run `jigctl run <root> --format=json` to get each
+record's guidance `body` and a machine-readable `projection` per binding,
+letting you act on failures programmatically without re-reading the record file.
 
 ## Step 2 — Propose exactly five
 
@@ -177,7 +179,10 @@ and say which file you chose and why.
 
 Run `jigctl validate <root>`, then the repo's own gate if it has one
 (`mise run check`, `make check`, `npm run check`). Report the result honestly,
-including a tree that was already red before you touched it.
+including a tree that was already red before you touched it. (Remember that
+`jigctl run <root> --format=json` returns each record's guidance `body` and a
+machine-readable `projection` per binding, letting you act on failures without
+re-reading the record file).
 
 When a record and the tooling disagree, fix the record. Never edit the schema, a
 fixture, or the check being bound to in order to make a new record pass — that

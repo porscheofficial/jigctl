@@ -311,3 +311,9 @@ reader has to work out which difference is meaningful, which is the entire
 cost the legend exists to save. It follows that a state whose entry carries
 no colour is drawn plain in both places, which is why `▒` and `█` look the
 same in the key as they do in the list.
+
+### 2026-08-21
+
+JSON is now the public machine format (`--format=json`). `--plain` is compatibility-only (deprecated); the human report is explicitly NOT a contract and provides no compatibility guarantees.
+
+This resolves the open question left in the first Note regarding where the guidance body goes. The full guidance body is now emitted in the JSON output's `body` field. It is explicitly excluded from both the human and plain outputs to keep them focused on actionable summaries, while ensuring the full text remains available for tooling.

@@ -43,10 +43,47 @@ Validate your repo's records for well-formedness:
 ./jigctl validate .
 ```
 
+## Machine Contract
+
+`jigctl run` provides a JSON contract via `--format=json` for tooling integration.
+
+- **Schema**: Validates against [`schema/run-output-v1.schema.json`](schema/run-output-v1.schema.json).
+- **Versioning**: The `schema_version` field guarantees compatibility. Additive changes (new fields) are non-breaking; consumers should ignore unknown fields.
+- **Channel Contract**: A completed run always emits valid JSON on `stdout` (even with 0 records). An invocation failure (e.g. bad format) or operational crash emits an empty `stdout`, writes the error to `stderr`, and exits with code `2`.
+
+**Example:**
+
+```bash
+./jigctl run . --format=json
+```
+
+```json
+{
+  "schema_version": 1,
+  "command": "run",
+  "root": "/path/to/repo",
+  "exit_code": 0,
+  "diagnostics": [],
+  "summary": {
+    "records": 1,
+    "bindings": 1,
+    "bindings_by_projection": {
+      "pass": 1,
+      "violation": 0,
+      "expected-unchecked": 0,
+      "blocked-unchecked": 0,
+      "operational": 0,
+      "invalid": 0
+    },
+    "unwaived_findings": 0,
+    "files_with_unwaived_findings": 0
+  },
+  "records": []
+}
+```
+
 ## Status
 
-This repo contains the HCR schema (`schema/hcr.schema.json`) and the `jigctl`
-validator. The CLI currently validates records for correctness; executing
-commands to enforce constraints is a future milestone.
+This repo contains the HCR schema and the `jigctl` CLI.
 
 Licensed under MIT.

@@ -20,10 +20,10 @@ of theory is how adoption dies.
 > everywhere, and one per service for rules that apply to just that service.
 > `jigctl validate` checks they stay well-formed and consistent.
 
-Be accurate about what the installed `jigctl` does. If the version in use
-validates records but does not yet execute their bindings, say so plainly. The
-record is still the one place the rule and its check are written down together,
-and the binding is machine-readable for when execution arrives.
+Be accurate about what the installed `jigctl` does. The `jigctl run --format=json`
+command now executes bindings and surfaces their results machine-readably. The
+record is the one place the rule and its check are written down together, and
+the JSON contract provides the enforcement results.
 
 ## 2. Detect the tree shape
 
