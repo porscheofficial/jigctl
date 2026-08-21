@@ -274,7 +274,7 @@ func init() {
 	runCmd.Flags().BoolVar(&runAllowExec, "allow-exec", false, "Authorize execution of command bindings")
 	runCmd.Flags().BoolVar(&runStrict, "strict", false, "Promote expected-unchecked bindings to failure")
 	runCmd.Flags().StringVar(&runFormatStr, "format", "human", "Output format (human, plain, json)")
-	runCmd.Flags().BoolVar(&runPlain, "plain", false, "Deprecated alias for --format=plain")
+	runCmd.Flags().BoolVar(&runPlain, "plain", false, "One-line-per-binding output (deprecated: use --format=plain)")
 	runCmd.Flags().BoolVar(&runNoColor, "no-color", false, "Disable color output")
 	rootCmd.AddCommand(runCmd)
 }
