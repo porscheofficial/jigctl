@@ -12,7 +12,7 @@ run = "check-jsonschema --check-metaschema schema/hcr.schema.json"
 
 [tasks.corpus]
 description = "Run every corpus fixture against the schema and assert its expected verdict"
-run = "go test ./internal/hcr/ -race -shuffle=on -count=1 -run TestCorpus -v"
+run = "go test ./internal/hcr/ -race -shuffle=on -count=1 -run 'TestCorpus|TestTree' -v"
 
 [tasks."expectations:freeze"]
 description = "Freeze the corpus expectation digest for deliberate review"

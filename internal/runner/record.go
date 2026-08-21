@@ -17,6 +17,9 @@ type Record struct {
 	Path       string
 	Title      string
 	State      string
+	Body       string
+	TargetKind string
+	TargetPath string
 	Summary    string
 	Projection Projection
 	Rows       []Row
@@ -91,6 +94,9 @@ func newRecord(path string, rows []Row) Record {
 		rec.RecordID = firstNonEmpty(rec.RecordID, r.RecordID)
 		rec.Title = firstNonEmpty(rec.Title, r.Title)
 		rec.State = firstNonEmpty(rec.State, r.State)
+		rec.Body = firstNonEmpty(rec.Body, r.Body)
+		rec.TargetKind = firstNonEmpty(rec.TargetKind, r.TargetKind)
+		rec.TargetPath = firstNonEmpty(rec.TargetPath, r.TargetPath)
 		rec.Summary = firstNonEmpty(rec.Summary, r.Summary)
 	}
 	return rec

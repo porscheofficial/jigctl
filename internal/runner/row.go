@@ -19,6 +19,9 @@ type Row struct {
 	// one record carries the same value, since state is a record-level
 	// field, which is what lets a grouped record render one state glyph.
 	State         string
+	Body          string
+	TargetKind    string
+	TargetPath    string
 	Severity      string
 	Summary       string
 	Tool          string
@@ -197,6 +200,8 @@ func processVerdict(
 		Identity:   rep.Identity,
 		Locator:    getLocator(plan, &rep, ok, perRecord),
 		Kind:       rep.Kind,
+		TargetKind: rep.Target.Name,
+		TargetPath: rep.Target.Path,
 		Severity:   rep.Severity,
 		Projection: deriveProjection(v, mutatedFindings),
 		Reason:     v.Reason(),
@@ -212,6 +217,7 @@ func processVerdict(
 		row.Docs = b.Docs
 		row.Title = b.Title
 		row.State = b.State
+		row.Body = b.Body
 	}
 
 	for i := range mutatedFindings {

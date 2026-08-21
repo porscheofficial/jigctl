@@ -7,6 +7,7 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/BurntSushi/toml"
 	"github.com/goccy/go-yaml"
@@ -136,6 +137,17 @@ func ValidateTree(root string) ([]Diagnostic, error) {
 	return validateTreeAt(root, utcDateOf(time.Now()))
 }
 
+func decodeRecordMeta(record indexedRecord, diags []Diagnostic) (parsedMeta, []byte, error) {
+	var meta parsedMeta
+	if fm, extractedBody, present := extractFrontmatter(record.source); present {
+		if decodeErr := yaml.Unmarshal(fm, &meta); decodeErr != nil && len(diags) == 0 {
+			return parsedMeta{}, nil, fmt.Errorf("decode schema-valid frontmatter %s: %w", record.path, decodeErr)
+		}
+		return meta, extractedBody, nil
+	}
+	return meta, nil, nil
+}
+
 func validateTreeAt(root string, currentDate time.Time) ([]Diagnostic, error) {
 	canonicalRoot, err := filepath.Abs(filepath.Clean(root))
 	if err != nil {
@@ -166,25 +178,28 @@ func validateTreeAt(root string, currentDate time.Time) ([]Diagnostic, error) {
 			return nil, fmt.Errorf("relativize %s: %w", record.path, relErr)
 		}
 
-		var meta parsedMeta
-		if fm, _, present := extractFrontmatter(record.source); present {
-			if decodeErr := yaml.Unmarshal(fm, &meta); decodeErr != nil && len(recordDiagnostics) == 0 {
-				return nil, fmt.Errorf("decode schema-valid frontmatter %s: %w", record.path, decodeErr)
-			}
+		meta, body, decodeErr := decodeRecordMeta(record, recordDiagnostics)
+		if decodeErr != nil {
+			return nil, decodeErr
 		}
 
 		if idPattern.MatchString(meta.ID) {
 			identityIndex[meta.ID] = true
 		}
 
-		if len(recordDiagnostics) == 0 {
-			emitters = append(emitters, emitterRecord{
-				path:    record.path,
-				relPath: relPath,
-				service: record.service,
-				meta:    meta,
-			})
+		if len(recordDiagnostics) > 0 {
+			continue
 		}
+
+		if !utf8.Valid(body) {
+			diagnostics = append(diagnostics, Diagnostic{File: record.path, Code: "R-113"})
+			continue
+		}
+
+		emitters = append(emitters, emitterRecord{
+			path: record.path, relPath: relPath,
+			service: record.service, meta: meta,
+		})
 	}
 
 	applyMetaRules(metaRuleContext{

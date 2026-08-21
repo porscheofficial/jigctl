@@ -1,0 +1,4 @@
+diagnostics:
+  - file: .hcr/HCR-1130-bad-body.md
+    at: ""
+    rule: R-113

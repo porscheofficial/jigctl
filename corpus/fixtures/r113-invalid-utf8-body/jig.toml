@@ -1,0 +1,3 @@
+# jig.toml for the r113-invalid-utf8-body fixture.
+# The record has a body that is not valid UTF-8.
+service_globs = []

@@ -54,6 +54,7 @@ This register is normative for which rules exist. Completeness means every rule 
 | R-110 | `external.docs` anchors resolve (`handover:175`) | enforced (M1) | requires-filesystem | the valid `external` fixture |
 | R-111 | a `rationale` reference resolves to an artifact that exists | enforced (M1) | requires-filesystem | the valid fixture carrying `rationale` |
 | R-112 | a record's filename begins with its own `id` (`HCR-NNNN-<slug>.md`) | enforced (M1) | requires-filesystem | multi-service, a repo-level record — every record there is named this way |
+| R-113 | a record's body must be valid UTF-8 | enforced (M1) | requires-filesystem | the UTF-8 tree fixture |
 
 ### Enforced tier-2 rule algorithms
 
@@ -82,6 +83,8 @@ Every rule below runs only over records that have already cleared the JSON Schem
 **R-111.** A record's `rationale` identifier is split on its first hyphen into a prefix and the remaining identifier text. The prefix selects a glob pattern from the root `jig.toml` `[rationale]` map; an unmapped prefix is skipped rather than reported. For a mapped prefix, the algorithm substitutes `{id}` with the complete rationale identifier and `{rest}` with the text after the first hyphen, then expands the resulting glob relative to the tree root. Zero matches produces an R-111 diagnostic; one or more matches satisfies the rule.
 
 **R-112.** A record's filename must begin with its own `id`, followed by a literal `-`, then a non-empty lowercase-kebab slug, and ending with `.md`. A bare prefix test is insufficient because it admits `HCR-03011-x.md` for `HCR-0301`, and `HCR-0301.md` is a violation because the separator and slug are both required. The comparison is byte-exact against the on-disk directory entry, so a case-differing filename is a violation even on a case-insensitive filesystem.
+
+**R-113.** A record's body must be valid UTF-8. The schema validator already checks the YAML frontmatter for valid text; this rule specifically guarantees that the remaining markdown body after the `---` separator is a valid UTF-8 sequence, allowing subsequent string processing (like rule extraction) to proceed safely without byte-level corruption errors.
 
 ## Fixture corpora and the `expect.yaml` format
 
