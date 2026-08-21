@@ -7,8 +7,11 @@ go = "1.26.6"
 "go:go.uber.org/nilaway/cmd/nilaway" = "latest"
 
 [tasks.metaschema]
-description = "Validate the HCR schema against its own metaschema"
-run = "check-jsonschema --check-metaschema schema/hcr.schema.json"
+description = "Validate the schemas against their own metaschema"
+run = """
+check-jsonschema --check-metaschema schema/hcr.schema.json
+check-jsonschema --check-metaschema schema/run-output-v1.schema.json
+"""
 
 [tasks.corpus]
 description = "Run every corpus fixture against the schema and assert its expected verdict"

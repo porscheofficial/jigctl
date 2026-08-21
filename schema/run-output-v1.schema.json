@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://jigctl.org/schema/run-output-v1.schema.json",
+  "title": "jigctl run output v1",
+  "description": "The shape of the JSON document emitted by `jigctl run --format=json`.",
+  "$comment": "schema_version is an integer major version. Additive changes (new fields, new reason/diagnostic codes) are non-breaking; consumers MUST ignore unknown fields. Breaking changes: removing/renaming a field, changing a field's type or nullability, changing what a path or count means, changing array ordering guarantees.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "command",
+    "root",
+    "exit_code",
+    "diagnostics",
+    "summary",
+    "records"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "integer",
+      "const": 1
+    },
+    "command": {
+      "enum": ["run"]
+    },
+    "root": {
+      "type": "string"
+    },
+    "exit_code": {
+      "type": "integer"
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "file",
+          "pointer",
+          "code",
+          "message"
+        ],
+        "properties": {
+          "file": {
+            "type": "string"
+          },
+          "pointer": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "required": [
+        "records",
+        "bindings",
+        "bindings_by_projection",
+        "unwaived_findings",
+        "files_with_unwaived_findings"
+      ],
+      "properties": {
+        "records": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bindings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bindings_by_projection": {
+          "type": "object",
+          "required": [
+            "pass",
+            "violation",
+            "expected-unchecked",
+            "blocked-unchecked",
+            "operational",
+            "invalid"
+          ],
+          "properties": {
+            "pass": { "type": "integer", "minimum": 0 },
+            "violation": { "type": "integer", "minimum": 0 },
+            "expected-unchecked": { "type": "integer", "minimum": 0 },
+            "blocked-unchecked": { "type": "integer", "minimum": 0 },
+            "operational": { "type": "integer", "minimum": 0 },
+            "invalid": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "unwaived_findings": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "files_with_unwaived_findings": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "record_id",
+          "path",
+          "title",
+          "state",
+          "summary",
+          "body",
+          "projection",
+          "target",
+          "bindings"
+        ],
+        "properties": {
+          "record_id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "state": {
+            "enum": ["draft", "warn", "enforced", "deprecated"]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "projection": {
+            "$comment": "A record's projection is the worst (highest-severity) projection among its own bindings, per the ranking pass < expected-unchecked/blocked-unchecked < operational < invalid < violation (see internal/runner/record.go projectionRank) — it is not independently computed.",
+            "enum": ["pass", "violation", "expected-unchecked", "blocked-unchecked", "operational", "invalid"]
+          },
+          "target": {
+            "type": "object",
+            "required": [
+              "kind",
+              "path"
+            ],
+            "properties": {
+              "kind": {
+                "enum": ["repo", "service"]
+              },
+              "path": {
+                "type": "string"
+              }
+            }
+          },
+          "bindings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "index",
+                "kind",
+                "severity",
+                "projection",
+                "reason",
+                "tool",
+                "docs",
+                "execution",
+                "findings",
+                "waived_count",
+                "unwaived_count"
+              ],
+              "properties": {
+                "index": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "kind": {
+                  "enum": ["command", "config-assert", "grep", "external", "agent-review", "inferential"]
+                },
+                "severity": {
+                  "enum": ["blocking", "advisory"]
+                },
+                "projection": {
+                  "enum": ["pass", "violation", "expected-unchecked", "blocked-unchecked", "operational", "invalid"]
+                },
+                "reason": {
+                  "type": ["string", "null"]
+                },
+                "tool": {
+                  "type": "string"
+                },
+                "docs": {
+                  "type": "string"
+                },
+                "execution": {
+                  "type": ["object", "null"],
+                  "required": [
+                    "argv",
+                    "exit_code",
+                    "duration_ms"
+                  ],
+                  "properties": {
+                    "argv": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "exit_code": {
+                      "type": "integer"
+                    },
+                    "duration_ms": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                },
+                "findings": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "file",
+                      "pointer",
+                      "severity",
+                      "partial",
+                      "waived_by"
+                    ],
+                    "properties": {
+                      "file": {
+                        "type": "string"
+                      },
+                      "pointer": {
+                        "type": "string"
+                      },
+                      "severity": {
+                        "enum": ["blocking", "advisory"]
+                      },
+                      "partial": {
+                        "type": "boolean"
+                      },
+                      "waived_by": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "record_path",
+                            "exception_index"
+                          ],
+                          "properties": {
+                            "record_path": {
+                              "type": "string"
+                            },
+                            "exception_index": {
+                              "type": "integer",
+                              "minimum": 0
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "waived_count": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "unwaived_count": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

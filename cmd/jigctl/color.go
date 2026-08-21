@@ -4,10 +4,14 @@ type colorDecisionInputs struct {
 	IsTerminal  bool
 	FlagNoColor bool
 	FlagPlain   bool
+	FormatJSON  bool
 	LookupEnv   func(string) (string, bool)
 }
 
 func shouldEnableColor(inputs colorDecisionInputs) bool {
+	if inputs.FormatJSON {
+		return false
+	}
 	if inputs.FlagPlain {
 		return false
 	}

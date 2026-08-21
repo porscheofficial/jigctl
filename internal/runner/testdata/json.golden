@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "command": "run",
+  "root": "",
+  "exit_code": 0,
+  "diagnostics": [],
+  "summary": {
+    "records": 3,
+    "bindings": 3,
+    "bindings_by_projection": {
+      "blocked-unchecked": 0,
+      "expected-unchecked": 1,
+      "invalid": 0,
+      "operational": 0,
+      "pass": 1,
+      "violation": 1
+    },
+    "unwaived_findings": 1,
+    "files_with_unwaived_findings": 1
+  },
+  "records": [
+    {
+      "record_id": "HCR-1001",
+      "path": "A.md",
+      "title": "Title A",
+      "state": "enforced",
+      "summary": "Check A",
+      "body": "This is a body",
+      "projection": "pass",
+      "target": {
+        "kind": "repo",
+        "path": "."
+      },
+      "bindings": [
+        {
+          "index": 0,
+          "kind": "command",
+          "severity": "blocking",
+          "projection": "pass",
+          "reason": null,
+          "tool": "",
+          "docs": "",
+          "execution": {
+            "argv": [
+              "ls",
+              "-la"
+            ],
+            "exit_code": 0,
+            "duration_ms": 0
+          },
+          "findings": [],
+          "waived_count": 0,
+          "unwaived_count": 0
+        }
+      ]
+    },
+    {
+      "record_id": "HCR-1002",
+      "path": "B.md",
+      "title": "Title B",
+      "state": "enforced",
+      "summary": "Check B",
+      "body": "",
+      "projection": "violation",
+      "target": {
+        "kind": "service",
+        "path": "svc1"
+      },
+      "bindings": [
+        {
+          "index": 0,
+          "kind": "grep",
+          "severity": "blocking",
+          "projection": "violation",
+          "reason": null,
+          "tool": "",
+          "docs": "",
+          "execution": null,
+          "findings": [
+            {
+              "file": "b.txt",
+              "pointer": "L10",
+              "severity": "blocking",
+              "partial": false,
+              "waived_by": []
+            }
+          ],
+          "waived_count": 0,
+          "unwaived_count": 1
+        }
+      ]
+    },
+    {
+      "record_id": "HCR-1003",
+      "path": "C.md",
+      "title": "Title C",
+      "state": "enforced",
+      "summary": "Check C",
+      "body": "",
+      "projection": "expected-unchecked",
+      "target": {
+        "kind": "repo",
+        "path": "."
+      },
+      "bindings": [
+        {
+          "index": 0,
+          "kind": "external",
+          "severity": "advisory",
+          "projection": "expected-unchecked",
+          "reason": "kind-not-executable",
+          "tool": "",
+          "docs": "",
+          "execution": null,
+          "findings": [],
+          "waived_count": 0,
+          "unwaived_count": 0
+        }
+      ]
+    }
+  ]
+}

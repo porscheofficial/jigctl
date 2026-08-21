@@ -20,6 +20,7 @@ var (
 	runStrict    bool
 	runPlain     bool
 	runNoColor   bool
+	runFormatStr string
 )
 
 var runCmd = &cobra.Command{
@@ -27,7 +28,21 @@ var runCmd = &cobra.Command{
 	Short: "Execute HCR records in the tree",
 	Args:  cobra.MaximumNArgs(1),
 	RunE: func(c *cobra.Command, args []string) error {
-		return runAction(args, describeStdout(), os.Stdout)
+		if c.Flags().Changed("plain") && c.Flags().Changed("format") {
+			return fmt.Errorf("cannot specify both --plain and --format")
+		}
+
+		formatStr := runFormatStr
+		if c.Flags().Changed("plain") {
+			formatStr = "plain"
+		}
+
+		format, err := runner.ParseFormat(formatStr)
+		if err != nil {
+			return fmt.Errorf("parse format: %w", err)
+		}
+
+		return runAction(args, describeStdout(), os.Stdout, format)
 	},
 }
 
@@ -78,10 +93,10 @@ func findRoot(args []string) (string, error) {
 	return "", fmt.Errorf("no jig.toml found in %s or any parent", path)
 }
 
-func runAction(args []string, screen tty, out io.Writer) error {
+func runAction(args []string, screen tty, out io.Writer, format runner.Format) error {
 	root, err := findRoot(args)
 	if err != nil {
-		return err
+		return fmt.Errorf("parse format: %w", err)
 	}
 
 	plan, diagnostics, err := hcr.ExecutionPlan(root, time.Now())
@@ -90,7 +105,18 @@ func runAction(args []string, screen tty, out io.Writer) error {
 	}
 
 	if len(diagnostics) > 0 {
-		printDiagnostics(out, root, diagnostics)
+		if format == runner.FormatJSON {
+			if renderErr := runner.RenderJSON(out, runner.JSONOptions{
+				Root:        root,
+				Rows:        []runner.Row{},
+				Diagnostics: diagnostics,
+				ExitCode:    1,
+			}); renderErr != nil {
+				return fmt.Errorf("render json diagnostics: %w", renderErr)
+			}
+		} else {
+			printDiagnostics(out, root, diagnostics)
+		}
 		recordedExitCode = 1
 		return nil
 	}
@@ -100,12 +126,13 @@ func runAction(args []string, screen tty, out io.Writer) error {
 		IsTerminal:  screen.IsTerminal,
 		FlagNoColor: runNoColor,
 		FlagPlain:   runPlain,
+		FormatJSON:  format == runner.FormatJSON,
 		LookupEnv:   os.LookupEnv,
 	})}
 
-	rows := evaluate(&plan, authorized, liveOptions(out, &plan, screen, style))
+	rows := evaluate(&plan, authorized, liveOptions(out, &plan, screen, style, format))
 
-	if renderErr := render(out, rows, screen, style); renderErr != nil {
+	if renderErr := render(out, rows, screen, style, format, root); renderErr != nil {
 		return renderErr
 	}
 
@@ -130,8 +157,14 @@ func printDiagnostics(out io.Writer, root string, diagnostics []hcr.Diagnostic) 
 // liveOptions returns the zero LiveOptions when a live view has no business
 // running: a pipe has no cursor to move, --plain is the shape scripts pin to,
 // and a dumb terminal cannot honour the escapes the view is painted with.
-func liveOptions(out io.Writer, plan *hcr.Plan, screen tty, style runner.Style) runner.LiveOptions {
-	if !screen.IsTerminal || runPlain || os.Getenv("TERM") == "dumb" {
+func liveOptions(
+	out io.Writer,
+	plan *hcr.Plan,
+	screen tty,
+	style runner.Style,
+	format runner.Format,
+) runner.LiveOptions {
+	if !screen.IsTerminal || runPlain || os.Getenv("TERM") == "dumb" || format == runner.FormatJSON {
 		return runner.LiveOptions{}
 	}
 	return runner.LiveOptions{
@@ -204,8 +237,21 @@ func reraise(received os.Signal) {
 	}
 }
 
-func render(out io.Writer, rows []runner.Row, screen tty, style runner.Style) error {
-	if runPlain {
+func render(out io.Writer, rows []runner.Row, screen tty, style runner.Style, format runner.Format, root string) error {
+	if format == runner.FormatJSON {
+		exitCode := runner.AggregateExitCode(runner.ExitSummaries(rows), runStrict)
+		err := runner.RenderJSON(out, runner.JSONOptions{
+			Root:     root,
+			Rows:     rows,
+			ExitCode: exitCode,
+		})
+		if err != nil {
+			return fmt.Errorf("render json: %w", err)
+		}
+		return nil
+	}
+
+	if runPlain || format == runner.FormatPlain {
 		if err := runner.RenderPlain(out, rows); err != nil {
 			return fmt.Errorf("render plain output: %w", err)
 		}
@@ -227,7 +273,8 @@ func render(out io.Writer, rows []runner.Row, screen tty, style runner.Style) er
 func init() {
 	runCmd.Flags().BoolVar(&runAllowExec, "allow-exec", false, "Authorize execution of command bindings")
 	runCmd.Flags().BoolVar(&runStrict, "strict", false, "Promote expected-unchecked bindings to failure")
-	runCmd.Flags().BoolVar(&runPlain, "plain", false, "Render plain one-line-per-record output")
+	runCmd.Flags().StringVar(&runFormatStr, "format", "human", "Output format (human, plain, json)")
+	runCmd.Flags().BoolVar(&runPlain, "plain", false, "Deprecated alias for --format=plain")
 	runCmd.Flags().BoolVar(&runNoColor, "no-color", false, "Disable color output")
 	rootCmd.AddCommand(runCmd)
 }

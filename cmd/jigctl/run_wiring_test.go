@@ -5,6 +5,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/patricebouillet/jigctl/internal/runner"
 )
 
 func setupValidFixture(t *testing.T) string {
@@ -97,7 +99,7 @@ func TestRunWiring_NoColor(t *testing.T) {
 
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, tty{IsTerminal: true}, &out) // pass isTerminal=true but no-color=true
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatPlain)
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -135,7 +137,7 @@ func TestRunWiring_Plain(t *testing.T) {
 
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, tty{IsTerminal: true}, &out)
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatPlain)
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -177,7 +179,7 @@ func TestRunWiring_ColorEnabled(t *testing.T) {
 	// Also clear env vars that might disable color for this process
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, tty{IsTerminal: true}, &out)
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatHuman)
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -210,14 +212,14 @@ func TestRunWiring_OutputDifference(t *testing.T) {
 	// Color enabled run
 	runNoColor = false
 	runPlain = false
-	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outColor); err != nil {
+	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outColor, runner.FormatHuman); err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
 
 	// Plain run
 	runNoColor = false
 	runPlain = true
-	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outPlain); err != nil {
+	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outPlain, runner.FormatPlain); err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
 
