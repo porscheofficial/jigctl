@@ -100,7 +100,7 @@ func notRunPhrase(r *Row) string {
 // A binding Select would not attempt describes nothing: naming a command that
 // is never going to run reads as a promise the run has already broken.
 func plannedEvidence(b *hcr.ExecutableBinding) string {
-	if b.Kind != "command" || Select(&VerdictReport{}, b) != nil {
+	if b.Kind != "command" || Select(&VerdictReport{}, b, DefaultCadenceSet()) != nil {
 		return ""
 	}
 	return strings.Join(strings.Fields(b.Run), " ")

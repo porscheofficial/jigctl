@@ -7,12 +7,11 @@ import (
 // Select determines whether a binding should execute in the current invocation,
 // enforcing gating on record state, cadence rules, and executable kinds.
 //
-// Cadence logic: A bare jigctl run invocation (with no --cadence flag)
-// is executed identically by local developers and CI. Thus, a binding
-// is selected if its resolved Cadence contains either "on-change" or "ci".
-// Bindings with only "scheduled", "production", or empty cadence are excluded.
-// If selected for execution, Select returns nil.
-func Select(report *VerdictReport, binding *hcr.ExecutableBinding) *Verdict {
+// Cadence logic: Selection checks the binding's cadence against the requested set.
+// If it matches, the binding executes (returns nil). If it misses and the invoker
+// explicitly specified the cadence, it yields ReasonCadenceDeselected. If it misses
+// under the implicit default cadence, it yields ReasonCadenceExcluded.
+func Select(report *VerdictReport, binding *hcr.ExecutableBinding, requested CadenceSet) *Verdict {
 	if binding.State == "draft" {
 		return NewNotAttemptedVerdict(report, ReasonRecordDraft)
 	}
@@ -26,16 +25,11 @@ func Select(report *VerdictReport, binding *hcr.ExecutableBinding) *Verdict {
 		return NewNotAttemptedVerdict(report, ReasonKindNotExecutable)
 	}
 
-	hasCadence := false
-	for _, c := range binding.Cadence {
-		if c == "on-change" || c == "ci" {
-			hasCadence = true
-			break
-		}
+	if requested.Selects(binding) {
+		return nil
 	}
-	if !hasCadence {
-		return NewNotAttemptedVerdict(report, ReasonCadenceExcluded)
+	if requested.Explicit() {
+		return NewNotAttemptedVerdict(report, ReasonCadenceDeselected)
 	}
-
-	return nil
+	return NewNotAttemptedVerdict(report, ReasonCadenceExcluded)
 }

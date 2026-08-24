@@ -23,6 +23,12 @@ const (
 	ProjectionExpectedUnchecked
 	ProjectionBlockedUnchecked
 	ProjectionOperational
+
+	// projectionCount is the number of Projection members. The explicit
+	// int(iota) makes it an int, not a Projection, so the exhaustive
+	// linter does not treat it as an enum member. Add every new
+	// projection ABOVE this line.
+	projectionCount = int(iota)
 )
 
 // Reason identifies why a binding did not complete normally.
@@ -54,6 +60,17 @@ const (
 	reasonLimitExceeded
 	reasonInvocationCancelled
 	reasonCadenceDeselected
+
+	// reasonCount is the number of Reason members. The explicit
+	// int(iota) makes it an int, not a Reason, so the exhaustive
+	// linter does not treat it as an enum member. Add every new
+	// reason ABOVE this line.
+	reasonCount = int(iota)
+)
+
+var (
+	_ = projectionCount
+	_ = reasonCount
 )
 
 // BlockedReason is a closed subset accepted only by blocked verdicts.

@@ -9,7 +9,7 @@ import (
 func TestSelect_StateDraft(t *testing.T) {
 	report := &VerdictReport{}
 	binding := &hcr.ExecutableBinding{State: "draft"}
-	v := Select(report, binding)
+	v := Select(report, binding, DefaultCadenceSet())
 	if v == nil || v.Completion() != CompletionNotAttempted || v.Reason() != Reason(ReasonRecordDraft) {
 		t.Errorf("Expected NotAttempted / ReasonRecordDraft, got %v", v)
 	}
@@ -18,7 +18,7 @@ func TestSelect_StateDraft(t *testing.T) {
 func TestSelect_StateDeprecated(t *testing.T) {
 	report := &VerdictReport{}
 	binding := &hcr.ExecutableBinding{State: "deprecated"}
-	v := Select(report, binding)
+	v := Select(report, binding, DefaultCadenceSet())
 	if v == nil || v.Completion() != CompletionNotAttempted || v.Reason() != Reason(ReasonRecordDeprecated) {
 		t.Errorf("Expected NotAttempted / ReasonRecordDeprecated, got %v", v)
 	}
@@ -32,7 +32,7 @@ func TestSelect_StateEnforcedAndWarn(t *testing.T) {
 			Kind:    "command",
 			Cadence: []string{"on-change"},
 		}
-		v := Select(report, binding)
+		v := Select(report, binding, DefaultCadenceSet())
 		if v != nil {
 			t.Errorf("Expected state %q to be selected, got %v", state, v)
 		}
@@ -47,7 +47,7 @@ func TestSelect_KindNotExecutable(t *testing.T) {
 			Kind:    kind,
 			Cadence: []string{"on-change"}, // would be valid cadence
 		}
-		v := Select(report, binding)
+		v := Select(report, binding, DefaultCadenceSet())
 		if v == nil || v.Completion() != CompletionNotAttempted || v.Reason() != Reason(ReasonKindNotExecutable) {
 			t.Errorf("Expected %q to be excluded by kind, got %v", kind, v)
 		}
@@ -74,7 +74,7 @@ func TestSelect_Cadence(t *testing.T) {
 				Kind:    "command",
 				Cadence: tt.cadence,
 			}
-			v := Select(report, binding)
+			v := Select(report, binding, DefaultCadenceSet())
 			if tt.selected {
 				if v != nil {
 					t.Errorf("Expected selected, got %v", v)
@@ -83,6 +83,38 @@ func TestSelect_Cadence(t *testing.T) {
 				if v == nil || v.Completion() != CompletionNotAttempted || v.Reason() != Reason(ReasonCadenceExcluded) {
 					t.Errorf("Expected CadenceExcluded, got %v", v)
 				}
+			}
+		})
+	}
+}
+
+func TestSelect_RequestedCadenceSet(t *testing.T) {
+	reqCI, err := ParseCadenceSet("ci", true)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	tests := []struct {
+		name       string
+		bindingCad []string
+		requested  CadenceSet
+		wantReason Reason
+	}{
+		{"on-change binding vs ci requested", []string{"on-change"}, reqCI, Reason(ReasonCadenceDeselected)},
+		{"scheduled binding vs ci requested", []string{"scheduled"}, reqCI, Reason(ReasonCadenceDeselected)},
+		{"scheduled binding vs default requested", []string{"scheduled"}, DefaultCadenceSet(), Reason(ReasonCadenceExcluded)},
+	}
+	report := &VerdictReport{}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			binding := &hcr.ExecutableBinding{
+				State:   "active",
+				Kind:    "command",
+				Cadence: tt.bindingCad,
+			}
+			v := Select(report, binding, tt.requested)
+			if v == nil || v.Completion() != CompletionNotAttempted || v.Reason() != tt.wantReason {
+				t.Errorf("Expected %v, got %v", tt.wantReason, v)
 			}
 		})
 	}
@@ -110,7 +142,7 @@ func TestSelect_RealRecords(t *testing.T) {
 	report := &VerdictReport{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			v := Select(report, &tt.record)
+			v := Select(report, &tt.record, DefaultCadenceSet())
 			if tt.wantReason == ReasonNone {
 				if v != nil {
 					t.Errorf("Expected %s to be selected, got %v", tt.name, v)

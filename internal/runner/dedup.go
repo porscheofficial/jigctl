@@ -130,7 +130,7 @@ func filterGroup(
 			Severity: b.Severity,
 		}
 
-		if v := Select(&report, b); v != nil {
+		if v := Select(&report, b, DefaultCadenceSet()); v != nil {
 			m.verdict = v
 			members = append(members, m)
 			continue
