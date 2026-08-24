@@ -250,7 +250,11 @@ func TestEvaluatePlanWithProgress_Cadence(t *testing.T) {
 
 		plan := hcr.Plan{Root: tmpRoot, Targets: []hcr.Target{{Kind: "repo", Path: "", Bindings: []hcr.ExecutableBinding{b}}}}
 		prog := &recordingProgress{}
-		cadence, _ := ParseCadenceSet("scheduled", true)
+		cadence, err := ParseCadenceSet("scheduled", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = cadence
 		os.Remove(counterPath)
 		EvaluatePlanWithProgress(plan, true, cadence, prog)
 
@@ -269,7 +273,11 @@ func TestEvaluatePlanWithProgress_Cadence(t *testing.T) {
 
 		plan := hcr.Plan{Root: tmpRoot, Targets: []hcr.Target{{Kind: "repo", Path: "", Bindings: []hcr.ExecutableBinding{b0, b1}}}}
 		prog := &recordingProgress{}
-		cadence, _ := ParseCadenceSet("scheduled", true)
+		cadence, err := ParseCadenceSet("scheduled", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = cadence
 		os.Remove(counterPath)
 		verdicts := EvaluatePlanWithProgress(plan, true, cadence, prog)
 
@@ -295,7 +303,11 @@ func TestEvaluatePlanWithProgress_Cadence(t *testing.T) {
 
 		plan := hcr.Plan{Root: tmpRoot, Targets: []hcr.Target{{Kind: "repo", Path: "", Bindings: []hcr.ExecutableBinding{b0, b1}}}}
 		prog := &recordingProgress{}
-		cadence, _ := ParseCadenceSet("scheduled", true)
+		cadence, err := ParseCadenceSet("scheduled", true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_ = cadence
 		os.Remove(counterPath)
 		EvaluatePlanWithProgress(plan, true, cadence, prog)
 

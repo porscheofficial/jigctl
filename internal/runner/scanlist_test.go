@@ -78,7 +78,7 @@ func TestPlannedEvidenceMatchesSettled(t *testing.T) {
 		Execution:  &Execution{Argv: argv},
 	}
 
-	planned := plannedEvidence(&binding)
+	planned := plannedEvidence(&binding, DefaultCadenceSet())
 	if want := bindingEvidence(&settled); planned != want {
 		t.Errorf("planned evidence %q does not match settled evidence %q", planned, want)
 	}
@@ -102,9 +102,55 @@ func TestPlannedEvidenceSilentWhenNothingWillRun(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			binding := base
 			mutate(&binding)
-			if got := plannedEvidence(&binding); got != "" {
+			if got := plannedEvidence(&binding, DefaultCadenceSet()); got != "" {
 				t.Errorf("expected no planned evidence for a binding that will not run, got %q", got)
 			}
 		})
+	}
+}
+
+func TestPlannedEvidenceExplicitCadenceExclusion(t *testing.T) {
+	binding := hcr.ExecutableBinding{
+		RecordPath: "A", Kind: "command", State: "enforced",
+		Cadence: []string{"on-change"}, Run: "mise run check",
+	}
+	cadence, err := ParseCadenceSet("ci", true)
+	if err != nil {
+		t.Fatalf("ParseCadenceSet failed: %v", err)
+	}
+	if got := plannedEvidence(&binding, cadence); got != "" {
+		t.Errorf("expected no planned evidence for excluded cadence, got %q", got)
+	}
+}
+
+func TestLiveSkeletonCadenceExclusion(t *testing.T) {
+	plan := &hcr.Plan{
+		Targets: []hcr.Target{
+			{
+				Bindings: []hcr.ExecutableBinding{
+					{
+						RecordPath: "A",
+						Kind:       "command",
+						State:      "enforced",
+						Cadence:    []string{"on-change"},
+						Run:        "echo run",
+					},
+				},
+			},
+		},
+	}
+
+	cadence, err := ParseCadenceSet("ci", true)
+	if err != nil {
+		t.Fatalf("ParseCadenceSet failed: %v", err)
+	}
+	records, _ := liveSkeleton(plan, cadence)
+
+	if len(records) != 1 {
+		t.Fatalf("expected 1 live record since the binding exists, got %d", len(records))
+	}
+
+	if len(records[0].planned) != 0 {
+		t.Errorf("expected no planned work for binding excluded by cadence, got %q", records[0].planned)
 	}
 }

@@ -74,11 +74,12 @@ func (r *liveRecord) addPlanned(text string) {
 
 // LiveOptions configures the transient progress view.
 type LiveOptions struct {
-	Out    io.Writer
-	Plan   *hcr.Plan
-	Style  Style
-	Width  int
-	Height int
+	Out     io.Writer
+	Plan    *hcr.Plan
+	Style   Style
+	Width   int
+	Height  int
+	Cadence CadenceSet
 	// Tick is the repaint interval; zero selects a default.
 	Tick time.Duration
 }
@@ -117,7 +118,7 @@ func NewLiveView(opts LiveOptions) (*LiveView, bool) {
 		return nil, false
 	}
 
-	records, index := liveSkeleton(opts.Plan)
+	records, index := liveSkeleton(opts.Plan, opts.Cadence)
 	if len(records) == 0 || opts.Width < minLiveWidth || opts.Height < len(records)+liveHeadroom {
 		return nil, false
 	}
@@ -229,7 +230,7 @@ func (v *LiveView) loop() {
 // prints them, and returns the binding-to-line index progress is reported
 // through. A record bound twice occupies one line, so the block the view
 // erases is the same height as the list Render prints into its place.
-func liveSkeleton(plan *hcr.Plan) (records []liveRecord, index map[BindingIdentity]int) {
+func liveSkeleton(plan *hcr.Plan, cadence CadenceSet) (records []liveRecord, index map[BindingIdentity]int) {
 	byPath := make(map[string]*liveRecord)
 	for i := range plan.Targets {
 		t := &plan.Targets[i]
@@ -246,7 +247,7 @@ func liveSkeleton(plan *hcr.Plan) (records []liveRecord, index map[BindingIdenti
 				byPath[b.RecordPath] = rec
 			}
 			rec.bindings++
-			rec.addPlanned(plannedEvidence(b))
+			rec.addPlanned(plannedEvidence(b, cadence))
 		}
 	}
 

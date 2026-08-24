@@ -174,11 +174,12 @@ func liveOptions(
 		return runner.LiveOptions{}
 	}
 	return runner.LiveOptions{
-		Out:    out,
-		Plan:   plan,
-		Style:  style,
-		Width:  screen.Width,
-		Height: screen.Height,
+		Out:     out,
+		Plan:    plan,
+		Style:   style,
+		Width:   screen.Width,
+		Height:  screen.Height,
+		Cadence: runner.DefaultCadenceSet(),
 	}
 }
 
