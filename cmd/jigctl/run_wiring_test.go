@@ -99,7 +99,7 @@ func TestRunWiring_NoColor(t *testing.T) {
 
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatPlain)
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatPlain, runner.DefaultCadenceSet())
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -137,7 +137,7 @@ func TestRunWiring_Plain(t *testing.T) {
 
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatPlain)
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatPlain, runner.DefaultCadenceSet())
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -179,7 +179,7 @@ func TestRunWiring_ColorEnabled(t *testing.T) {
 	// Also clear env vars that might disable color for this process
 	clearColorEnv(t)
 
-	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatHuman)
+	err := runAction([]string{dir}, tty{IsTerminal: true}, &out, runner.FormatHuman, runner.DefaultCadenceSet())
 	if err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
@@ -212,14 +212,14 @@ func TestRunWiring_OutputDifference(t *testing.T) {
 	// Color enabled run
 	runNoColor = false
 	runPlain = false
-	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outColor, runner.FormatHuman); err != nil {
+	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outColor, runner.FormatHuman, runner.DefaultCadenceSet()); err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
 
 	// Plain run
 	runNoColor = false
 	runPlain = true
-	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outPlain, runner.FormatPlain); err != nil {
+	if err := runAction([]string{dir}, tty{IsTerminal: true}, &outPlain, runner.FormatPlain, runner.DefaultCadenceSet()); err != nil {
 		t.Fatalf("runAction failed: %v", err)
 	}
 
@@ -236,5 +236,67 @@ func TestRunWiring_OutputDifference(t *testing.T) {
 	// If plain and default output are identical, renderer selection failed
 	if bytes.Equal(outColor.Bytes(), outPlain.Bytes()) {
 		t.Errorf("Expected --plain and default mode to produce different output shapes, but they were identical")
+	}
+}
+
+func TestRunWiring_CadenceLeak(t *testing.T) {
+	dir := setupValidFixture(t)
+
+	origArgs := os.Args
+	origCadence := runCadence
+	origExitCode := recordedExitCode
+
+	defer func() {
+		os.Args = origArgs
+		runCadence = origCadence
+		flag := runCmd.Flags().Lookup("cadence")
+		if flag != nil {
+			flag.Changed = false
+			if err := flag.Value.Set(""); err != nil {
+				t.Logf("flag.Value.Set failed: %v", err)
+			}
+		}
+		recordedExitCode = origExitCode
+	}()
+
+	oldStdout := os.Stdout
+	defer func() { os.Stdout = oldStdout }()
+
+	r1, w1, err1 := os.Pipe()
+	if err1 != nil {
+		t.Fatalf("os.Pipe failed: %v", err1)
+	}
+	os.Stdout = w1
+	os.Args = []string{"jigctl", "run", dir, "--cadence=scheduled", "--format=json"}
+	Execute()
+	w1.Close()
+	var out1 bytes.Buffer
+	if _, readErr := out1.ReadFrom(r1); readErr != nil {
+		t.Fatalf("ReadFrom failed: %v", readErr)
+	}
+
+	if flag2 := runCmd.Flags().Lookup("cadence"); flag2 != nil {
+		flag2.Changed = false
+	}
+	if setErr := runCmd.Flags().Set("cadence", ""); setErr != nil {
+		t.Fatalf("Flags.Set failed: %v", setErr)
+	}
+	recordedExitCode = 0
+
+	r2, w2, err2 := os.Pipe()
+	if err2 != nil {
+		t.Fatalf("os.Pipe failed: %v", err2)
+	}
+	os.Stdout = w2
+	os.Args = []string{"jigctl", "run", dir, "--format=json"}
+	Execute()
+	w2.Close()
+	var out2 bytes.Buffer
+	if _, readErr2 := out2.ReadFrom(r2); readErr2 != nil {
+		t.Fatalf("ReadFrom failed: %v", readErr2)
+	}
+
+	if bytes.Equal(out1.Bytes(), out2.Bytes()) {
+		t.Errorf("Expected different outputs for scheduled and default cadence runs, but they were identical")
 	}
 }

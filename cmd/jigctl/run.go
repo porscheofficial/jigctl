@@ -22,6 +22,7 @@ var (
 	runNoColor      bool
 	runFormatStr    string
 	runOnlyFailures bool
+	runCadence      string
 )
 
 var runCmd = &cobra.Command{
@@ -47,7 +48,12 @@ var runCmd = &cobra.Command{
 			return fmt.Errorf("parse format: %w", err)
 		}
 
-		return runAction(args, describeStdout(), os.Stdout, format)
+		cadenceSet, err := runner.ParseCadenceSet(runCadence, c.Flags().Changed("cadence"))
+		if err != nil {
+			return fmt.Errorf("parse cadence: %w", err)
+		}
+
+		return runAction(args, describeStdout(), os.Stdout, format, cadenceSet)
 	},
 }
 
@@ -98,7 +104,7 @@ func findRoot(args []string) (string, error) {
 	return "", fmt.Errorf("no jig.toml found in %s or any parent", path)
 }
 
-func runAction(args []string, screen tty, out io.Writer, format runner.Format) error {
+func runAction(args []string, screen tty, out io.Writer, format runner.Format, cadence runner.CadenceSet) error {
 	root, err := findRoot(args)
 	if err != nil {
 		return fmt.Errorf("parse format: %w", err)
@@ -136,7 +142,7 @@ func runAction(args []string, screen tty, out io.Writer, format runner.Format) e
 		LookupEnv:   os.LookupEnv,
 	})}
 
-	rows := evaluate(&plan, authorized, liveOptions(out, &plan, screen, style, format))
+	rows := evaluate(&plan, authorized, liveOptions(out, &plan, screen, style, format, cadence), cadence)
 
 	if renderErr := render(out, rows, screen, style, format, root); renderErr != nil {
 		return renderErr
@@ -169,6 +175,7 @@ func liveOptions(
 	screen tty,
 	style runner.Style,
 	format runner.Format,
+	cadence runner.CadenceSet,
 ) runner.LiveOptions {
 	if !screen.IsTerminal || runPlain || os.Getenv("TERM") == "dumb" || format == runner.FormatJSON {
 		return runner.LiveOptions{}
@@ -179,11 +186,11 @@ func liveOptions(
 		Style:   style,
 		Width:   screen.Width,
 		Height:  screen.Height,
-		Cadence: runner.DefaultCadenceSet(),
+		Cadence: cadence,
 	}
 }
 
-func evaluate(plan *hcr.Plan, authorized bool, live runner.LiveOptions) []runner.Row {
+func evaluate(plan *hcr.Plan, authorized bool, live runner.LiveOptions, cadence runner.CadenceSet) []runner.Row {
 	var progress runner.Progress
 	var view *runner.LiveView
 	if v, ok := runner.NewLiveView(live); ok {
@@ -191,7 +198,7 @@ func evaluate(plan *hcr.Plan, authorized bool, live runner.LiveOptions) []runner
 	}
 	defer restoreOnSignal(view)()
 
-	verdicts := runner.EvaluatePlanWithProgress(*plan, authorized, runner.DefaultCadenceSet(), progress)
+	verdicts := runner.EvaluatePlanWithProgress(*plan, authorized, cadence, progress)
 	rows := runner.BuildRows(plan, verdicts)
 
 	if view != nil {
@@ -252,5 +259,11 @@ func init() {
 	runCmd.Flags().BoolVar(&runNoColor, "no-color", false, "Disable color output")
 	runCmd.Flags().BoolVar(&runOnlyFailures, "only-failures", false,
 		"Emit only records that need action (requires --format=json)")
+
+	const cadenceUsage = "select bindings by cadence: all, or a " +
+		"comma-separated subset of on-change,ci,scheduled,production " +
+		"(default: on-change,ci)"
+	runCmd.Flags().StringVar(&runCadence, "cadence", "", cadenceUsage)
+
 	rootCmd.AddCommand(runCmd)
 }
