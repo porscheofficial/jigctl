@@ -76,7 +76,7 @@ Furthermore, R-108 is a resolver rather than a checkable rule. It computes the u
 
 ## Rejected alternatives
 
-A hand-curated TypeScript registry was rejected because it cannot reach Go, Python, or JVM teams — an HCR must be readable and checkable from whatever language a monorepo happens to contain, not only the language the tool itself was written in.
+A hand-curated TypeScript registry was rejected because it cannot reach Go, Python, or JVM teams — an HCR must be readable and checkable from whatever languages a repository happens to contain, not only the language the tool itself was written in.
 
 A separate `sensors.yaml` enumerating every check was rejected instead of trusting the records and the corpus as the single source of truth: a second hand-maintained registry drifts from what it describes, and nobody notices the drift until it is load-bearing.
 

@@ -11,7 +11,7 @@ var recordedExitCode int
 
 var rootCmd = &cobra.Command{
 	Use:           "jigctl",
-	Short:         "A constraint harness for polyglot monorepos",
+	Short:         "A language-agnostic constraint harness for any codebase",
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	CompletionOptions: cobra.CompletionOptions{

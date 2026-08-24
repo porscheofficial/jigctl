@@ -1,6 +1,7 @@
 # jigctl
 
-A constraint harness for polyglot monorepos — repo-wide and per-service.
+A language-agnostic constraint harness for any codebase — rules scoped repo-wide,
+or to a single service.
 
 An **HCR** (Harness Constraint Record) is a single, versioned, machine-checkable
 rule about your codebase. `jigctl` is the reference implementation CLI that reads
