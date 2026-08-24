@@ -18,26 +18,26 @@ type Progress interface {
 
 // EvaluatePlan evaluates all executable bindings in a plan, deduplicating
 // executions for bindings that share a non-empty Ref.
-func EvaluatePlan(plan hcr.Plan, authorized bool) []*Verdict {
-	return EvaluatePlanWithProgress(plan, authorized, nil)
+func EvaluatePlan(plan hcr.Plan, authorized bool, cadence CadenceSet) []*Verdict {
+	return EvaluatePlanWithProgress(plan, authorized, cadence, nil)
 }
 
-func notifyStart(p Progress, all []bindingCtx, groupIdxs []int) {
+func notifyStart(p Progress, eligibleMembers []member) {
 	if p == nil {
 		return
 	}
-	for _, idx := range groupIdxs {
-		b := all[idx].binding
+	for _, m := range eligibleMembers {
+		b := m.ctx.binding
 		p.Start(BindingIdentity{RecordPath: b.RecordPath, BindingIndex: b.BindingIndex})
 	}
 }
 
-func notifyDone(p Progress, all []bindingCtx, groupIdxs []int, verdicts []*Verdict) {
+func notifyDone(p Progress, members []member, verdicts []*Verdict) {
 	if p == nil {
 		return
 	}
-	for _, idx := range groupIdxs {
-		b := all[idx].binding
-		p.Done(BindingIdentity{RecordPath: b.RecordPath, BindingIndex: b.BindingIndex}, verdicts[idx])
+	for _, m := range members {
+		b := m.ctx.binding
+		p.Done(BindingIdentity{RecordPath: b.RecordPath, BindingIndex: b.BindingIndex}, verdicts[m.ctx.originalIdx])
 	}
 }

@@ -190,7 +190,7 @@ func evaluate(plan *hcr.Plan, authorized bool, live runner.LiveOptions) []runner
 	}
 	defer restoreOnSignal(view)()
 
-	verdicts := runner.EvaluatePlanWithProgress(*plan, authorized, progress)
+	verdicts := runner.EvaluatePlanWithProgress(*plan, authorized, runner.DefaultCadenceSet(), progress)
 	rows := runner.BuildRows(plan, verdicts)
 
 	if view != nil {

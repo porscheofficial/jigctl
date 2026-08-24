@@ -16,7 +16,7 @@ type bindingCtx struct {
 // EvaluatePlanWithProgress evaluates all executable bindings in a plan,
 // deduplicating executions for bindings that share a non-empty Ref, and
 // reports each group's start and settlement to p. A nil p evaluates silently.
-func EvaluatePlanWithProgress(plan hcr.Plan, authorized bool, p Progress) []*Verdict {
+func EvaluatePlanWithProgress(plan hcr.Plan, authorized bool, cadence CadenceSet, p Progress) []*Verdict {
 	all := make([]bindingCtx, 0)
 	idx := 0
 	for _, t := range plan.Targets {
@@ -38,9 +38,12 @@ func EvaluatePlanWithProgress(plan hcr.Plan, authorized bool, p Progress) []*Ver
 	allGroups := groupBindings(all)
 
 	for _, groupIdxs := range allGroups {
-		notifyStart(p, all, groupIdxs)
-		evaluateGroup(plan, authorized, all, groupIdxs, verdicts)
-		notifyDone(p, all, groupIdxs, verdicts)
+		sortGroup(all, groupIdxs)
+		members, eligibleMembers, maxResolvedTimeout := filterGroup(all, groupIdxs, cadence)
+
+		notifyStart(p, eligibleMembers)
+		evaluateGroup(plan, authorized, members, eligibleMembers, maxResolvedTimeout, verdicts)
+		notifyDone(p, members, verdicts)
 	}
 
 	return verdicts
@@ -82,13 +85,11 @@ type member struct {
 func evaluateGroup(
 	plan hcr.Plan,
 	authorized bool,
-	all []bindingCtx,
-	groupIdxs []int,
+	members []member,
+	eligibleMembers []member,
+	maxResolvedTimeout time.Duration,
 	verdicts []*Verdict,
 ) {
-	sortGroup(all, groupIdxs)
-	members, eligibleMembers, maxResolvedTimeout := filterGroup(all, groupIdxs)
-
 	var sharedVerdict *Verdict
 	if len(eligibleMembers) > 0 {
 		sharedVerdict = executeGroup(plan, authorized, eligibleMembers[0].ctx, maxResolvedTimeout)
@@ -117,6 +118,7 @@ func sortGroup(all []bindingCtx, groupIdxs []int) {
 func filterGroup(
 	all []bindingCtx,
 	groupIdxs []int,
+	cadence CadenceSet,
 ) (members, eligibleMembers []member, maxResolvedTimeout time.Duration) {
 	for _, idx := range groupIdxs {
 		ctx := all[idx]
@@ -130,7 +132,7 @@ func filterGroup(
 			Severity: b.Severity,
 		}
 
-		if v := Select(&report, b, DefaultCadenceSet()); v != nil {
+		if v := Select(&report, b, cadence); v != nil {
 			m.verdict = v
 			members = append(members, m)
 			continue
