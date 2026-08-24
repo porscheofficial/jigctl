@@ -116,3 +116,79 @@ func TestVerdictReport_carries_actionable_execution_data(t *testing.T) {
 		t.Fatalf("Report() = %#v, want original report", verdict.Report())
 	}
 }
+
+func TestRunnerTaxonomyIsExhaustive(t *testing.T) {
+	if projectionCount != 6 {
+		t.Fatalf("projectionCount = %d, want exactly 6", projectionCount)
+	}
+
+	for i := 0; i < reasonCount; i++ {
+		r := Reason(i)
+
+		if _, ok := reasonData[r]; !ok {
+			t.Errorf("reason %d missing from reasonData", i)
+		}
+		if _, ok := reasonPhrases[r]; !ok {
+			t.Errorf("reason %d missing from reasonPhrases", i)
+		}
+
+		var expectedCompletion Completion
+		var expectedProjection Projection
+
+		report := &VerdictReport{}
+		var verdict *Verdict
+
+		switch r {
+		case ReasonNone:
+			expectedCompletion = CompletionCompleted
+			expectedProjection = ProjectionPass
+			verdict = NewCompletedVerdict(report)
+		case Reason(ReasonExecutableMissing),
+			Reason(ReasonExecutableDenied),
+			Reason(ReasonTimeout),
+			Reason(ReasonAuthorizationDenied),
+			Reason(ReasonGlobNoMatches),
+			Reason(ReasonInputMissing),
+			Reason(ReasonInputUnreadable),
+			Reason(ReasonInputMalformed),
+			Reason(ReasonPointerMalformed),
+			Reason(ReasonPatternInvalid),
+			Reason(ReasonScopeInvalid),
+			Reason(ReasonGlobInvalid),
+			Reason(ReasonArgvInvalid),
+			Reason(ReasonFormatUnsupported),
+			Reason(ReasonModifierUnimplemented):
+			expectedCompletion = CompletionBlocked
+			expectedProjection = ProjectionBlockedUnchecked
+			verdict = NewBlockedVerdict(report, BlockedReason(r))
+		case Reason(ReasonKindNotExecutable),
+			Reason(ReasonCadenceExcluded),
+			Reason(ReasonCadenceDeselected),
+			Reason(ReasonRecordDraft),
+			Reason(ReasonRecordDeprecated):
+			expectedCompletion = CompletionNotAttempted
+			expectedProjection = ProjectionExpectedUnchecked
+			verdict = NewNotAttemptedVerdict(report, ExpectedReason(r))
+		case Reason(ReasonProcessStart),
+			Reason(ReasonPathEscapesRoot),
+			Reason(ReasonLimitExceeded),
+			Reason(ReasonInvocationCancelled):
+			expectedCompletion = CompletionOperational
+			expectedProjection = ProjectionOperational
+			verdict = NewOperationalVerdict(report, OperationalReason(r))
+		default:
+			t.Fatalf("reason %d not mapped in taxonomy test", i)
+		}
+
+		if verdict.Completion() != expectedCompletion {
+			t.Errorf("reason %d completion = %v, want %v", i, verdict.Completion(), expectedCompletion)
+		}
+		proj, valid := verdict.Projection()
+		if !valid {
+			t.Errorf("reason %d projection invalid", i)
+		}
+		if proj != expectedProjection {
+			t.Errorf("reason %d projection = %v, want %v", i, proj, expectedProjection)
+		}
+	}
+}
