@@ -16,7 +16,7 @@ type Style struct {
 // colour, and the legend line printed above the list. This is a vocabulary
 // table kept in its own file, the same shape as reasonData in reason.go.
 // The legend describes only the projection-level meaning; the finer-grained
-// reason code (e.g. "kind-not-executable", "cadence-excluded") stays the
+// reason code (e.g. "kind-not-executable", "cadence-excluded", "cadence-deselected") stays the
 // right-hand column's job in reason.go and is deliberately not repeated
 // here, since the glyph does not distinguish between reasons that share a
 // projection either (ADR-0013).

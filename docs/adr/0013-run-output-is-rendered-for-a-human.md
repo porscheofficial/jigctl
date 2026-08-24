@@ -317,3 +317,7 @@ same in the key as they do in the list.
 JSON is now the public machine format (`--format=json`). `--plain` is compatibility-only (deprecated); the human report is explicitly NOT a contract and provides no compatibility guarantees.
 
 This resolves the open question left in the first Note regarding where the guidance body goes. The full guidance body is now emitted in the JSON output's `body` field. It is explicitly excluded from both the human and plain outputs to keep them focused on actionable summaries, while ensuring the full text remains available for tooling.
+
+### 2026-08-24
+
+The right-hand reason column now recognizes `cadence-deselected` as a second stable reason in its vocabulary, alongside `cadence-excluded`. The two reasons render the same way — as a word in the right-hand column, with no new glyph. Glyphs distinguish projections, not reasons, and both of these share the `expected-unchecked` projection.

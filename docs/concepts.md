@@ -10,7 +10,7 @@ Guidance without enforcement is a suggestion nobody follows. Enforcement without
 
 ## Three orthogonal axes
 
-A binding's behavior is fixed by three independent questions, each living in its own field so that answering one never constrains the answer to another. `state` answers *is this rule active right now?* `severity` answers *does a violation fail the run?* `cadence` answers *when does this run?* These are different questions with different owners: whether a rule is active yet is a rollout decision, whether a violation blocks is a risk decision, and when a check runs is a scheduling decision.
+A binding's behavior is fixed by three independent questions, each living in its own field so that answering one never constrains the answer to another. `state` answers *is this rule active right now?* `severity` answers *does a violation fail the run?* `cadence` answers *when does this run?* (The `--cadence` flag is how an invocation answers it, and the default is `on-change,ci`). These are different questions with different owners: whether a rule is active yet is a rollout decision, whether a violation blocks is a risk decision, and when a check runs is a scheduling decision.
 
 The three stay orthogonal because collapsing any two of them makes some real situation inexpressible. A rule mid-rollout needs to run in CI as a non-blocking signal while the record itself is still provisional — if activation implied severity, or severity implied cadence, that shape could not be written down at all. Keeping the axes separate means a rule's lifecycle, its risk, and its schedule can each change independently without touching the other two.
 
