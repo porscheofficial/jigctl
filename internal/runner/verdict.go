@@ -53,6 +53,7 @@ const (
 	reasonPathEscapesRoot
 	reasonLimitExceeded
 	reasonInvocationCancelled
+	reasonCadenceDeselected
 )
 
 // BlockedReason is a closed subset accepted only by blocked verdicts.
@@ -82,6 +83,7 @@ type ExpectedReason Reason
 const (
 	ReasonKindNotExecutable ExpectedReason = ExpectedReason(reasonKindNotExecutable)
 	ReasonCadenceExcluded   ExpectedReason = ExpectedReason(reasonCadenceExcluded)
+	ReasonCadenceDeselected ExpectedReason = ExpectedReason(reasonCadenceDeselected)
 	ReasonRecordDraft       ExpectedReason = ExpectedReason(reasonRecordDraft)
 	ReasonRecordDeprecated  ExpectedReason = ExpectedReason(reasonRecordDeprecated)
 )
