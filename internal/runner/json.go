@@ -17,6 +17,7 @@ type JSONOptions struct {
 	Diagnostics       []hcr.Diagnostic
 	ExitCode          int
 	NormalizeDuration bool
+	OnlyFailures      bool
 }
 
 // marshalAndWriteJSON formats the document as indented JSON and writes it to out
@@ -125,19 +126,7 @@ func buildJSONDocument(opts JSONOptions) (JSONDocument, error) {
 			}
 
 			if row.Execution != nil {
-				exec := JSONExecution{
-					Argv:     row.Execution.Argv,
-					ExitCode: row.Execution.ExitCode,
-				}
-				if exec.Argv == nil {
-					exec.Argv = []string{}
-				}
-				if opts.NormalizeDuration {
-					exec.DurationMs = 0
-				} else {
-					exec.DurationMs = int(row.Execution.Duration.Round(time.Millisecond) / time.Millisecond)
-				}
-				jb.Execution = &exec
+				jb.Execution = buildJSONExecution(row, opts.NormalizeDuration)
 			}
 
 			for k := range row.Findings {
@@ -170,5 +159,37 @@ func buildJSONDocument(opts JSONOptions) (JSONDocument, error) {
 	doc.Summary.UnwaivedFindings = unwaivedSum
 	doc.Summary.FilesWithUnwaivedFindings = UnwaivedFileCount(opts.Rows)
 
+	if opts.OnlyFailures {
+		doc.Records = filterFailureRecords(doc.Records)
+	}
+
 	return doc, nil
+}
+
+// filterFailureRecords returns only the records whose projection is actionable,
+// per jsonFailureProjection. The returned slice is never nil.
+func filterFailureRecords(records []JSONRecord) []JSONRecord {
+	filtered := make([]JSONRecord, 0)
+	for i := range records {
+		if jsonFailureProjectionString[records[i].Projection] {
+			filtered = append(filtered, records[i])
+		}
+	}
+	return filtered
+}
+
+func buildJSONExecution(row *Row, normalize bool) *JSONExecution {
+	exec := JSONExecution{
+		Argv:     row.Execution.Argv,
+		ExitCode: row.Execution.ExitCode,
+	}
+	if exec.Argv == nil {
+		exec.Argv = []string{}
+	}
+	if normalize {
+		exec.DurationMs = 0
+	} else {
+		exec.DurationMs = int(row.Execution.Duration.Round(time.Millisecond) / time.Millisecond)
+	}
+	return &exec
 }

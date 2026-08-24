@@ -16,11 +16,12 @@ import (
 )
 
 var (
-	runAllowExec bool
-	runStrict    bool
-	runPlain     bool
-	runNoColor   bool
-	runFormatStr string
+	runAllowExec    bool
+	runStrict       bool
+	runPlain        bool
+	runNoColor      bool
+	runFormatStr    string
+	runOnlyFailures bool
 )
 
 var runCmd = &cobra.Command{
@@ -35,6 +36,10 @@ var runCmd = &cobra.Command{
 		formatStr := runFormatStr
 		if c.Flags().Changed("plain") {
 			formatStr = "plain"
+		}
+
+		if c.Flags().Changed("only-failures") && formatStr != "json" {
+			return fmt.Errorf("--only-failures requires --format=json")
 		}
 
 		format, err := runner.ParseFormat(formatStr)
@@ -107,10 +112,11 @@ func runAction(args []string, screen tty, out io.Writer, format runner.Format) e
 	if len(diagnostics) > 0 {
 		if format == runner.FormatJSON {
 			if renderErr := runner.RenderJSON(out, runner.JSONOptions{
-				Root:        root,
-				Rows:        []runner.Row{},
-				Diagnostics: diagnostics,
-				ExitCode:    1,
+				Root:         root,
+				Rows:         []runner.Row{},
+				Diagnostics:  diagnostics,
+				ExitCode:     1,
+				OnlyFailures: runOnlyFailures,
 			}); renderErr != nil {
 				return fmt.Errorf("render json diagnostics: %w", renderErr)
 			}
@@ -241,9 +247,10 @@ func render(out io.Writer, rows []runner.Row, screen tty, style runner.Style, fo
 	if format == runner.FormatJSON {
 		exitCode := runner.AggregateExitCode(runner.ExitSummaries(rows), runStrict)
 		err := runner.RenderJSON(out, runner.JSONOptions{
-			Root:     root,
-			Rows:     rows,
-			ExitCode: exitCode,
+			Root:         root,
+			Rows:         rows,
+			ExitCode:     exitCode,
+			OnlyFailures: runOnlyFailures,
 		})
 		if err != nil {
 			return fmt.Errorf("render json: %w", err)
@@ -276,5 +283,7 @@ func init() {
 	runCmd.Flags().StringVar(&runFormatStr, "format", "human", "Output format (human, plain, json)")
 	runCmd.Flags().BoolVar(&runPlain, "plain", false, "One-line-per-binding output (deprecated: use --format=plain)")
 	runCmd.Flags().BoolVar(&runNoColor, "no-color", false, "Disable color output")
+	runCmd.Flags().BoolVar(&runOnlyFailures, "only-failures", false,
+		"Emit only records that need action (requires --format=json)")
 	rootCmd.AddCommand(runCmd)
 }

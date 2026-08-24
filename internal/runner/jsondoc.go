@@ -94,3 +94,23 @@ var jsonProjectionCode = map[Projection]string{
 	ProjectionOperational:       "operational",
 	ProjectionInvalid:           "invalid",
 }
+
+// jsonFailureProjection specifies whether a record with this projection should be
+// kept when --only-failures is requested. It must be exhaustive.
+var jsonFailureProjection = map[Projection]bool{
+	ProjectionPass:              false,
+	ProjectionExpectedUnchecked: false,
+	ProjectionBlockedUnchecked:  true,
+	ProjectionOperational:       true,
+	ProjectionInvalid:           true,
+	ProjectionViolation:         true,
+}
+
+var jsonFailureProjectionString map[string]bool
+
+func init() {
+	jsonFailureProjectionString = make(map[string]bool, len(jsonFailureProjection))
+	for p, keep := range jsonFailureProjection {
+		jsonFailureProjectionString[jsonProjectionCode[p]] = keep
+	}
+}
