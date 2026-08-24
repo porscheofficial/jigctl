@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 // ResolveAuthorization determines if execution is authorized based on ADR-0007.

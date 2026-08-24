@@ -7,7 +7,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 // JSONOptions defines the parameters for JSON output rendering.

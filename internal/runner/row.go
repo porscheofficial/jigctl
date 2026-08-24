@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 // Row represents the fully evaluated outcome of a single binding, ready for rendering or exit aggregation.

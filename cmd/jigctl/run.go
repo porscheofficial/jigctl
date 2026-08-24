@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
-	"github.com/patricebouillet/jigctl/internal/runner"
+	"github.com/porscheofficial/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/runner"
 	"github.com/spf13/cobra"
 	"golang.org/x/term"
 )

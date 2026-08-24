@@ -1,7 +1,7 @@
 package runner
 
 import (
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 // Select determines whether a binding should execute in the current invocation,

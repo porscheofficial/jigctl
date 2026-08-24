@@ -12,7 +12,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/goccy/go-yaml"
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 var (

@@ -3,7 +3,7 @@ package runner
 import (
 	"testing"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 func TestLocator(t *testing.T) {

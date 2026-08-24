@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"github.com/goccy/go-yaml"
-	"github.com/patricebouillet/jigctl/schema"
+	"github.com/porscheofficial/jigctl/schema"
 	jsonschema "github.com/santhosh-tekuri/jsonschema/v6"
 	"github.com/santhosh-tekuri/jsonschema/v6/kind"
 )

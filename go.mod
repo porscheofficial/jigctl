@@ -1,4 +1,4 @@
-module github.com/patricebouillet/jigctl
+module github.com/porscheofficial/jigctl
 
 go 1.26
 

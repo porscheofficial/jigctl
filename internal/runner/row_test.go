@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 // oldComputeProjection replicates internal/runner/report.go:172-183.

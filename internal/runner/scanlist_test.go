@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 func TestBlockedExternalReason(t *testing.T) {

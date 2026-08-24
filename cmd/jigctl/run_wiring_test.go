@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/patricebouillet/jigctl/internal/runner"
+	"github.com/porscheofficial/jigctl/internal/runner"
 )
 
 func setupValidFixture(t *testing.T) string {

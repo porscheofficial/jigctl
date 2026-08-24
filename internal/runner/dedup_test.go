@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 func makeTestBinding(idx, timeout int, cadence []string, state, pattern, selectStr, scriptPath string) hcr.ExecutableBinding {

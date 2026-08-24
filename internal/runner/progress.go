@@ -1,6 +1,6 @@
 package runner
 
-import "github.com/patricebouillet/jigctl/internal/hcr"
+import "github.com/porscheofficial/jigctl/internal/hcr"
 
 // Progress observes a run as it happens. A run notifies it when a group of
 // bindings starts executing and again when each of them has settled, which is

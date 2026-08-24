@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/patricebouillet/jigctl/schema"
+	"github.com/porscheofficial/jigctl/schema"
 )
 
 type resolverSchema struct {

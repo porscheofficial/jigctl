@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/patricebouillet/jigctl/internal/hcr"
+	"github.com/porscheofficial/jigctl/internal/hcr"
 )
 
 func createJSONFixture() (*hcr.Plan, []*Verdict) {
