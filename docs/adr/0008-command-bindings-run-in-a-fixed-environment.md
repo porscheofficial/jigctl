@@ -1,5 +1,5 @@
 ---
-status: proposed
+status: accepted
 date: 2026-08-19
 decision-makers: [Patrice Bouillet]
 ---
