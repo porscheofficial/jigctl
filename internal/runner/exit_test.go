@@ -123,6 +123,49 @@ func TestExitCode(t *testing.T) {
 			},
 			expected: 2,
 		},
+		{
+			name: "one pass + one cadence-deselected under strict=true → exit code 0",
+			verdicts: []ExitSummary{
+				{Projection: ProjectionPass},
+				{Projection: ProjectionExpectedUnchecked, Deselected: true},
+			},
+			strict:   true,
+			expected: 0,
+		},
+		{
+			name: "one pass + one cadence-excluded under strict=true → exit code 1",
+			verdicts: []ExitSummary{
+				{Projection: ProjectionPass},
+				{Projection: ProjectionExpectedUnchecked, Deselected: false},
+			},
+			strict:   true,
+			expected: 1,
+		},
+		{
+			name: "all-deselected → exit code 77",
+			verdicts: []ExitSummary{
+				{Projection: ProjectionExpectedUnchecked, Deselected: true},
+				{Projection: ProjectionExpectedUnchecked, Deselected: true},
+			},
+			strict:   true,
+			expected: 77,
+		},
+		{
+			name: "deselected + one blocked → exit code 1",
+			verdicts: []ExitSummary{
+				{Projection: ProjectionExpectedUnchecked, Deselected: true},
+				{Projection: ProjectionBlockedUnchecked},
+			},
+			expected: 1,
+		},
+		{
+			name: "deselected + one advisory violation → exit code 0",
+			verdicts: []ExitSummary{
+				{Projection: ProjectionExpectedUnchecked, Deselected: true},
+				{Projection: ProjectionViolation, IsBlocking: false},
+			},
+			expected: 0,
+		},
 	}
 
 	for _, tt := range tests {

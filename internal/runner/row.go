@@ -238,6 +238,7 @@ func ExitSummaries(rows []Row) []ExitSummary {
 		summaries = append(summaries, ExitSummary{
 			Projection: rows[i].Projection,
 			IsBlocking: rows[i].Severity != "advisory",
+			Deselected: rows[i].Reason == Reason(ReasonCadenceDeselected),
 		})
 	}
 	return summaries

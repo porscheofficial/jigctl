@@ -4,6 +4,7 @@ package runner
 type ExitSummary struct {
 	Projection Projection
 	IsBlocking bool
+	Deselected bool
 }
 
 type exitState struct {
@@ -53,7 +54,9 @@ func updateState(st *exitState, v ExitSummary) {
 			st.realResult = true
 		}
 	case ProjectionExpectedUnchecked:
-		st.expectedUnchecked = true
+		if !v.Deselected {
+			st.expectedUnchecked = true
+		}
 	case ProjectionPass:
 		st.realResult = true
 	case ProjectionInvalid:
