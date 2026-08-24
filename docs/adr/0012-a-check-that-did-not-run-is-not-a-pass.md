@@ -144,3 +144,17 @@ a count above zero told them less than the entry that names the record.
 The obligation stands unchanged for `--plain`, which has no detail block and
 still prints both counts unconditionally. A consumer that parses counts
 parses that output, which is what ADR-0013 made it for.
+
+### 2026-08-24
+
+Line 107's subject is the entire `expected-unchecked` projection, and it is hereby narrowed to author-caused omissions only. It did not only ever concern cadence — it concerned `expected-unchecked` generally, which had one cause before and now has two.
+
+The `--cadence` flag introduced a second cause of that projection with opposite intent: the invoker's own deselection, distinguished by whether the flag was supplied. Strict is now strict **within the selected cadence universe**.
+
+A mixed run can therefore exit 0 with deselected bindings. This is accepted because it retains the three bounding properties: all-deselected still exits 77; deselected bindings still appear as `expected-unchecked` in `records[]` with their reason phrase; and `summary.bindings_by_projection` counts them, so `--only-failures` cannot alter the summary. It is also accepted despite the reason-level loss under `--only-failures`. Because deselected rows and their reason are filtered from `records[]`, a consumer loses the deselected-vs-excluded distinction under `--format=json --only-failures`. This is accepted, not a bug, and must be documented, not hidden.
+
+The Consequences sentence at lines 123-126 — "strict callers may reject deliberate omissions without changing their normal meaning" — is likewise narrowed: a strict caller still rejects the record author's deliberate omission, but no longer rejects the invoker's own.
+
+Line 66 survives with the new reason added alongside. Lines 83-85 survive because no sixth projection was introduced. Line 96's exit-77 meaning is unchanged. Lines 108-110 stand unrevisited.
+
+The Consequences sentence at lines 115-116 — "Failure to perform **selected** work can no longer borrow success from completed checks" — demonstrates that the Decision already contemplated a notion of selected work, which this change gives an invoker-facing control over.
